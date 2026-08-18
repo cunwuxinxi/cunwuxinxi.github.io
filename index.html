@@ -1,0 +1,4350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>党建引领 · 村务信息平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js">
+    </script>
+    <style>
+        /* ===== 全局样式 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --red: #b22222;
+            --dark-red: #8b1a1a;
+            --gold: #d4a843;
+            --bg-light: #fdf8f0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+            --radius: 12px;
+            --font: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            font-family: var(--font);
+            background: var(--bg-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== 登录覆盖层 ===== */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(145deg, #8b0000, #b22222, #cc3333);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-image: radial-gradient(circle at 30% 20%, rgba(255, 215, 0, 0.08) 0%, transparent 60%),
+                radial-gradient(circle at 70% 80%, rgba(255, 215, 0, 0.05) 0%, transparent 50%);
+        }
+        #loginOverlay.hidden {
+            display: none;
+        }
+        .login-box {
+            background: rgba(255, 252, 248, 0.95);
+            backdrop-filter: blur(4px);
+            border-radius: var(--radius);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(212, 168, 67, 0.3);
+            max-width: 420px;
+            width: 100%;
+            padding: 40px 36px;
+            border-top: 6px solid var(--gold);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(212, 168, 67, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .login-box .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .login-box .logo i {
+            font-size: 48px;
+            color: var(--red);
+            background: rgba(178, 34, 34, 0.1);
+            padding: 16px;
+            border-radius: 50%;
+        }
+        .login-box h2 {
+            color: var(--dark-red);
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 4px;
+            letter-spacing: 2px;
+        }
+        .login-box .sub {
+            text-align: center;
+            color: #6a5a4a;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .login-box .form-group {
+            margin-bottom: 18px;
+        }
+        .login-box .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #4a3a2a;
+            font-size: 14px;
+        }
+        .login-box .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #e0d0c0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: 0.2s;
+            background: #fffcf8;
+            color: #2d2d2d;
+        }
+        .login-box .form-group input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.25);
+        }
+        .login-box .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .login-box .form-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+        .login-box .form-actions .btn-login {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(178, 34, 34, 0.3);
+        }
+        .login-box .form-actions .btn-login:hover {
+            background: var(--dark-red);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(178, 34, 34, 0.4);
+        }
+        .login-box .form-actions .btn-register {
+            background: var(--gold);
+            color: var(--dark-red);
+        }
+        .login-box .form-actions .btn-register:hover {
+            background: #e8c86a;
+            transform: translateY(-2px);
+        }
+        .login-box .login-error {
+            color: #b22222;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 12px;
+            background: rgba(178, 34, 34, 0.08);
+            padding: 8px;
+            border-radius: 6px;
+        }
+        .login-box .footer-note {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            border-top: 1px solid #f0e8e0;
+            padding-top: 14px;
+        }
+
+        /* ===== 顶部栏 ===== */
+        .topbar {
+            background: linear-gradient(135deg, var(--dark-red), var(--red));
+            color: #fff;
+            padding: 12px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 12px rgba(178, 34, 34, 0.4);
+            border-bottom: 3px solid var(--gold);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 10px;
+        }
+        .topbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+        }
+        .topbar .brand .icon-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            overflow: hidden;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--gold);
+            transition: 0.2s;
+        }
+        .topbar .brand .icon-wrapper:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .topbar .brand .icon-wrapper i {
+            font-size: 24px;
+            color: var(--gold);
+        }
+        .topbar .brand .icon-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .topbar .brand .title-text {
+            cursor: default;
+        }
+        .topbar .brand .edit-title {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 4px;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+        .topbar .brand .edit-title:hover {
+            opacity: 1;
+        }
+        .topbar .brand small {
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-left: 8px;
+            letter-spacing: 0;
+        }
+
+        .topbar .datetime-display {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 400;
+            margin-right: auto;
+            margin-left: 16px;
+            letter-spacing: 0.5px;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 4px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(2px);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .topbar .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .topbar .actions button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 7px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+        .topbar .actions button:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: var(--gold);
+            transform: translateY(-1px);
+        }
+        .topbar .actions button.primary {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: var(--dark-red);
+            font-weight: 600;
+        }
+
+        /* ===== 主体布局 ===== */
+        .main-wrap {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 80px);
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 280px;
+            min-width: 220px;
+            background: #fff9f0;
+            border-right: 2px solid #f0e0d0;
+            padding: 18px 12px;
+            overflow-y: auto;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sidebar .tree-node {
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar .tree-node .node-content {
+            display: flex;
+            align-items: center;
+            padding: 5px 8px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: 0.2s;
+            gap: 4px;
+            font-size: 14px;
+            color: #4a3a2a;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+        .sidebar .tree-node .node-content:hover {
+            background: #f5ede4;
+        }
+        .sidebar .tree-node .node-content.active {
+            background: #f0e4d4;
+            border-left-color: var(--red);
+            color: var(--dark-red);
+            font-weight: 600;
+        }
+        .sidebar .tree-node .node-content .toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 18px;
+            color: #9a8a7a;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .sidebar .tree-node .node-content .toggle-btn:hover {
+            color: #4a3a2a;
+        }
+        .sidebar .tree-node .node-content .mod-name {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .sidebar .tree-node .node-content .mod-name i {
+            color: var(--gold);
+            margin-right: 4px;
+            width: 16px;
+        }
+        .sidebar .tree-node .node-content .node-actions {
+            display: flex;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .sidebar .tree-node .node-content .node-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            color: #6a5a4a;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .sidebar .tree-node .node-content .node-actions button:hover {
+            background: #e0d0c0;
+            color: #4a3a2a;
+        }
+        .sidebar .tree-node .node-content .node-actions .del-mod {
+            color: #c0392b;
+        }
+        .sidebar .tree-node .node-content .node-actions .del-mod:hover {
+            background: #fde8e8;
+            color: #b22222;
+        }
+        .sidebar .tree-node .node-content .node-actions .move-up,
+        .move-down {
+            color: #6a5a4a;
+        }
+        .sidebar .tree-node .node-content .node-actions .move-up:hover,
+        .move-down:hover {
+            background: #d0c8b8;
+        }
+        .sidebar .tree-node .children {
+            padding-left: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            border-left: 1px dashed #d0c8b8;
+            margin-left: 6px;
+        }
+        .sidebar .add-module {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: var(--gold);
+            color: var(--dark-red);
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .sidebar .add-module:hover {
+            background: #e8c86a;
+            transform: scale(1.02);
+        }
+        .sidebar .module-count {
+            font-size: 12px;
+            color: #9a8a7a;
+            text-align: center;
+            margin-top: 4px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+        .sidebar .dashboard-btn {
+            padding: 12px 16px;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .sidebar .dashboard-btn:hover {
+            background: var(--dark-red);
+            transform: scale(1.02);
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px 28px;
+            overflow-y: auto;
+            background: #fcf8f2;
+        }
+        .content .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0e0d0;
+        }
+        .content .panel-header h2 {
+            font-size: 24px;
+            color: var(--dark-red);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .content .panel-header h2 i {
+            color: var(--gold);
+        }
+        .content .panel-header .toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .content .panel-header .toolbar button {
+            padding: 6px 16px;
+            border-radius: 30px;
+            border: 1px solid #d0c0b0;
+            background: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #3d3d3d;
+        }
+        .content .panel-header .toolbar button:hover {
+            background: #f0e8e0;
+            border-color: #b0a090;
+        }
+        .content .panel-header .toolbar button.primary {
+            background: var(--red);
+            border-color: var(--red);
+            color: #fff;
+        }
+        .content .panel-header .toolbar button.primary:hover {
+            background: var(--dark-red);
+        }
+        .content .panel-header .toolbar button.danger {
+            color: #c0392b;
+            border-color: #f5c6cb;
+        }
+        .content .panel-header .toolbar button.danger:hover {
+            background: #fde8e8;
+            border-color: #c0392b;
+        }
+        .content .panel-header .toolbar button.excel {
+            background: #28a745;
+            border-color: #28a745;
+            color: #fff;
+        }
+        .content .panel-header .toolbar button.excel:hover {
+            background: #218838;
+            border-color: #1e7e34;
+        }
+        .content .panel-header .toolbar button.template {
+            background: #17a2b8;
+            border-color: #17a2b8;
+            color: #fff;
+        }
+        .content .panel-header .toolbar button.template:hover {
+            background: #138496;
+            border-color: #117a8b;
+        }
+        .content .panel-header .toolbar button.add-btn {
+            background: #007bff;
+            border-color: #007bff;
+            color: #fff;
+        }
+        .content .panel-header .toolbar button.add-btn:hover {
+            background: #0069d9;
+            border-color: #0062cc;
+        }
+        .content .panel-header .toolbar button.upload-img {
+            background: #fd7e14;
+            border-color: #fd7e14;
+            color: #fff;
+        }
+        .content .panel-header .toolbar button.upload-img:hover {
+            background: #e06b0a;
+            border-color: #d45a0a;
+        }
+
+        /* ===== 表格容器 ===== */
+        .resize-table-container {
+            resize: both;
+            overflow: auto;
+            max-width: 100%;
+            background: #fff;
+            border: 1px solid #e0d0c0;
+            padding: 8px;
+            border-radius: 4px;
+            min-height: 100px;
+            min-width: 300px;
+        }
+        .resize-table-container table {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .resize-table-container table th,
+        .resize-table-container table td {
+            padding: 6px 10px;
+            border: 1px solid #d4c8b8;
+            white-space: nowrap;
+            text-align: left;
+        }
+        .resize-table-container table th {
+            background: #f5ede4;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .record-card .card-body {
+            max-height: none;
+            overflow: visible;
+        }
+
+        /* ===== 通用表格样式（含列宽调整与自适应） ===== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 400px;
+            background: #fff;
+            table-layout: auto;
+        }
+        table th,
+        table td {
+            border: 1px solid #d4c8b8;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: middle;
+            white-space: normal;
+            word-break: break-word;
+            min-width: 40px;
+        }
+        table th {
+            background: #f5ede4;
+            font-weight: 600;
+            color: #4a3a2a;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            /* 允许用户拖动调整列宽 */
+            resize: horizontal;
+            overflow: auto;
+            min-width: 60px;
+            max-width: 600px;
+        }
+        table th:first-child {
+            text-align: center;
+            width: 40px;
+            max-width: 60px;
+        }
+        table tbody tr:nth-child(even) {
+            background: #fcf8f2;
+        }
+        table tbody tr:hover {
+            background: #f5ede4;
+        }
+        table td .row-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+        table td .row-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: 0.15s;
+            color: #6a5a4a;
+        }
+        table td .row-actions button:hover {
+            background: #e0d0c0;
+        }
+        table td .row-actions button.edit:hover {
+            color: var(--dark-red);
+        }
+        table td .row-actions button.del:hover {
+            color: #c0392b;
+            background: #fde8e8;
+        }
+
+        /* ===== 模块内搜索栏 ===== */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            background: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        .search-bar input {
+            flex: 1;
+            min-width: 180px;
+            padding: 8px 14px;
+            border: 1.5px solid #d0c0b0;
+            border-radius: 30px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+            background: #fffcf8;
+        }
+        .search-bar input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.15);
+        }
+        .search-bar .search-btn {
+            padding: 6px 18px;
+            border: none;
+            border-radius: 30px;
+            background: var(--red);
+            color: #fff;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        .search-bar .search-btn:hover {
+            background: var(--dark-red);
+        }
+        .search-bar .clear-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 30px;
+            background: #999;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        .search-bar .clear-btn:hover {
+            background: #777;
+        }
+        .search-bar .search-info {
+            font-size: 13px;
+            color: #6a5a4a;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .empty-tip {
+            text-align: center;
+            color: #b0a090;
+            padding: 48px 0;
+            font-size: 16px;
+        }
+        .empty-tip i {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 12px;
+            opacity: 0.4;
+        }
+
+        /* ===== 看板样式 ===== */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .dashboard-stats .stat-box {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border-left: 4px solid var(--gold);
+            transition: 0.2s;
+        }
+        .dashboard-stats .stat-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        }
+        .dashboard-stats .stat-box .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-red);
+        }
+        .dashboard-stats .stat-box .label {
+            font-size: 13px;
+            color: #6a5a4a;
+            margin-top: 4px;
+        }
+
+        /* 全局搜索栏（看板） */
+        .dashboard-search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        .dashboard-search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 14px;
+            border: 1.5px solid #d0c0b0;
+            border-radius: 30px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+            background: #fffcf8;
+        }
+        .dashboard-search-bar input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.15);
+        }
+        .dashboard-search-bar button {
+            padding: 6px 18px;
+            border: none;
+            border-radius: 30px;
+            background: var(--red);
+            color: #fff;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dashboard-search-bar button:hover {
+            background: var(--dark-red);
+        }
+        .dashboard-search-bar .clear-btn {
+            background: #999;
+        }
+        .dashboard-search-bar .clear-btn:hover {
+            background: #777;
+        }
+        .dashboard-search-bar .info {
+            font-size: 13px;
+            color: #6a5a4a;
+            margin-left: auto;
+        }
+
+        /* 搜索结果列表 */
+        .search-results-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .search-result-item {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 14px 18px;
+            border-left: 4px solid var(--gold);
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .search-result-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+        .search-result-item .result-mod {
+            font-size: 12px;
+            color: #6a5a4a;
+            background: #f5ede4;
+            padding: 2px 10px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        .search-result-item .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark-red);
+        }
+        .search-result-item .result-snippet {
+            font-size: 13px;
+            color: #4a3a2a;
+            margin-top: 4px;
+            max-height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .search-result-item .result-meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .dashboard-group {
+            margin-bottom: 24px;
+        }
+        .dashboard-group .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark-red);
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--gold);
+            margin-bottom: 12px;
+        }
+        .dashboard-group .group-header .group-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .dashboard-group .group-header .group-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #6a5a4a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: 0.15s;
+        }
+        .dashboard-group .group-header .group-actions button:hover {
+            background: #f0e8e0;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .dashboard-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .dashboard-list .dashboard-card {
+            width: 100%;
+        }
+
+        .dashboard-card {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px 18px;
+            border-left: 4px solid var(--gold);
+            transition: 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        .dashboard-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .dashboard-card .card-header h3 {
+            font-size: 16px;
+            color: var(--dark-red);
+            flex: 1;
+            margin-right: 6px;
+            word-break: break-word;
+        }
+        .dashboard-card .card-header .card-actions-edit {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .dashboard-card .card-header .card-actions-edit button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6a5a4a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: 0.15s;
+        }
+        .dashboard-card .card-header .card-actions-edit button:hover {
+            background: #f0e8e0;
+        }
+        .dashboard-card .card-stats {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 6px 0 8px 0;
+        }
+        .dashboard-card .card-stats .stat-item {
+            font-size: 13px;
+            color: #4a3a2a;
+            background: #fcf8f2;
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+        .dashboard-card .card-stats .stat-item strong {
+            font-weight: 600;
+            color: var(--dark-red);
+        }
+        .dashboard-card .card-note {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #6a5a4a;
+            background: #fcf8f2;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border-left: 3px solid var(--gold);
+        }
+        .dashboard-card .formula-result {
+            margin-top: 8px;
+            border-top: 1px solid #f0e8e0;
+            padding-top: 8px;
+            font-size: 13px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 12px;
+        }
+        .dashboard-card .formula-result .formula-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px dashed #f5ede4;
+        }
+        .dashboard-card .formula-result .formula-item .fname {
+            color: #6a5a4a;
+        }
+        .dashboard-card .formula-result .formula-item .fvalue {
+            color: var(--dark-red);
+            font-weight: 600;
+        }
+        .dashboard-card .formula-result .formula-item .formula-actions {
+            display: flex;
+            gap: 2px;
+        }
+        .dashboard-card .formula-result .formula-item .formula-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 11px;
+            color: #6a5a4a;
+            padding: 0 4px;
+            border-radius: 4px;
+        }
+        .dashboard-card .formula-result .formula-item .formula-actions button:hover {
+            background: #f0e8e0;
+        }
+        .dashboard-card .formula-result .formula-item .formula-actions .edit-fm {
+            color: #2c6b9e;
+        }
+        .dashboard-card .formula-result .formula-item .formula-actions .edit-fm:hover {
+            color: var(--dark-red);
+        }
+        .dashboard-card .formula-result .formula-item .formula-actions .del-fm {
+            color: #c0392b;
+        }
+        .dashboard-card .formula-result .formula-item .formula-actions .del-fm:hover {
+            background: #fde8e8;
+        }
+        .dashboard-card .latest-doc {
+            font-size: 12px;
+            color: #6a5a4a;
+            margin-top: 6px;
+            border-top: 1px solid #f0e8e0;
+            padding-top: 6px;
+        }
+        .dashboard-card .add-stat-btn {
+            margin-top: 6px;
+            padding: 2px 12px;
+            border: 1px dashed var(--gold);
+            border-radius: 20px;
+            background: none;
+            color: var(--gold);
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.2s;
+            align-self: flex-start;
+        }
+        .dashboard-card .add-stat-btn:hover {
+            background: var(--gold);
+            color: #fff;
+        }
+
+        /* ===== 文档卡片 ===== */
+        .record-card {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--gold);
+            transition: 0.2s;
+            position: relative;
+        }
+        .record-card:hover {
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+        }
+        .record-card .card-checkbox {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+        }
+        .record-card .card-checkbox input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .record-card .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark-red);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-right: 30px;
+        }
+        .record-card .card-title .card-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .record-card .card-title .card-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #6a5a4a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: 0.15s;
+        }
+        .record-card .card-title .card-actions button:hover {
+            background: #f0e8e0;
+        }
+        .record-card .card-title .card-actions button.edit:hover {
+            color: var(--dark-red);
+        }
+        .record-card .card-title .card-actions button.del:hover {
+            color: #c0392b;
+            background: #fde8e8;
+        }
+        .record-card .card-body {
+            font-size: 14px;
+            color: #3d3d3d;
+            line-height: 1.6;
+            overflow: hidden;
+            max-height: none;
+            overflow: visible;
+        }
+        .record-card .card-body img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 6px;
+            margin: 8px 0;
+            border: 1px solid #e0d0c0;
+            padding: 4px;
+            background: #fff;
+            cursor: pointer;
+            display: block;
+        }
+        .record-card .card-body table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 13px;
+            table-layout: auto;
+        }
+        .record-card .card-body table th,
+        .record-card .card-body table td {
+            border: 1px solid #d4c8b8;
+            padding: 6px 10px;
+            text-align: left;
+            white-space: normal;
+            word-break: break-word;
+            min-width: 40px;
+        }
+        .record-card .card-body table th {
+            background: #f5ede4;
+            font-weight: 600;
+            resize: horizontal;
+            overflow: auto;
+            min-width: 60px;
+            max-width: 600px;
+        }
+        .record-card .card-body p {
+            margin-bottom: 6px;
+        }
+        .record-card .card-body ul,
+        .record-card .card-body ol {
+            padding-left: 20px;
+            margin-bottom: 6px;
+        }
+        .record-card .meta-info {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+            border-top: 1px solid #f0e8e0;
+            padding-top: 6px;
+            text-align: right;
+        }
+
+        /* 搜索高亮 */
+        .search-highlight {
+            background: #ffeb3b !important;
+            padding: 0 3px;
+            border-radius: 3px;
+            font-weight: 700;
+            color: #000;
+        }
+
+        /* ===== 模态框 ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-box {
+            background: #fffcf5;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 28px 32px;
+            border-top: 6px solid var(--gold);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.92) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .modal-box h3 {
+            font-size: 22px;
+            color: var(--dark-red);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-box h3 i {
+            color: var(--gold);
+        }
+        .modal-box .form-group {
+            margin-bottom: 16px;
+        }
+        .modal-box .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #4a3a2a;
+            font-size: 14px;
+        }
+        .modal-box .form-group input,
+        .modal-box .form-group select,
+        .modal-box .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #e0d0c0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: 0.2s;
+            background: #fffcf8;
+            font-family: inherit;
+        }
+        .modal-box .form-group input:focus,
+        .modal-box .form-group select:focus,
+        .modal-box .form-group textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.2);
+        }
+        .modal-box .form-group textarea {
+            min-height: 180px;
+            resize: vertical;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .modal-box .form-group .editor-toolbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+        .modal-box .form-group .editor-toolbar button {
+            padding: 4px 12px;
+            border: 1px solid #d0c0b0;
+            border-radius: 4px;
+            background: #f5ede4;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .modal-box .form-group .editor-toolbar button:hover {
+            background: #e0d0c0;
+        }
+        .modal-box .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #f0e8e0;
+        }
+        .modal-box .form-actions button {
+            padding: 8px 28px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal-box .form-actions .btn-cancel {
+            background: #f0e8e0;
+            color: #4a3a2a;
+        }
+        .modal-box .form-actions .btn-cancel:hover {
+            background: #e0d0c0;
+        }
+        .modal-box .form-actions .btn-submit {
+            background: var(--red);
+            color: #fff;
+        }
+        .modal-box .form-actions .btn-submit:hover {
+            background: var(--dark-red);
+        }
+
+        .upload-area {
+            border: 2px dashed #d0c0b0;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #fcf8f2;
+        }
+        .upload-area:hover {
+            border-color: var(--gold);
+            background: #f5ede4;
+        }
+        .upload-area input {
+            display: none;
+        }
+        .upload-area .hint {
+            font-size: 13px;
+            color: #6a5a4a;
+        }
+        .upload-area .hint i {
+            margin-right: 6px;
+            color: var(--gold);
+        }
+        .file-selected {
+            font-size: 13px;
+            color: #28a745;
+            margin-top: 6px;
+        }
+        .image-preview {
+            margin-top: 8px;
+            max-width: 100%;
+        }
+        .image-preview img {
+            max-width: 200px;
+            max-height: 150px;
+            border: 1px solid #d0c0b0;
+            border-radius: 6px;
+            padding: 4px;
+            background: #fff;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2d2d2d;
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-size: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.4s, transform 0.4s;
+            pointer-events: none;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast-msg.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast-msg.success {
+            background: #1e7e34;
+        }
+        .toast-msg.error {
+            background: #b22222;
+        }
+        .toast-msg.info {
+            background: #2c6b9e;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        /* ===== 图标选择 ===== */
+        .icon-select-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .icon-select-grid .icon-option {
+            text-align: center;
+            padding: 12px;
+            border: 2px solid #e0d0c0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .icon-select-grid .icon-option:hover {
+            border-color: var(--gold);
+            background: #f5ede4;
+        }
+        .icon-select-grid .icon-option.selected {
+            border-color: var(--red);
+            background: #f0e4d4;
+        }
+        .icon-select-grid .icon-option i {
+            font-size: 28px;
+            color: var(--gold);
+        }
+        .icon-select-grid .icon-option .icon-label {
+            font-size: 12px;
+            color: #4a3a2a;
+            margin-top: 4px;
+        }
+        .icon-upload-area {
+            margin-top: 12px;
+            border: 2px dashed #d0c0b0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #fcf8f2;
+        }
+        .icon-upload-area:hover {
+            border-color: var(--gold);
+            background: #f5ede4;
+        }
+        .icon-upload-area input {
+            display: none;
+        }
+        .icon-upload-area .hint {
+            font-size: 13px;
+            color: #6a5a4a;
+        }
+        .icon-upload-area .hint i {
+            margin-right: 6px;
+            color: var(--gold);
+        }
+        .icon-preview {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .icon-preview img {
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 8px;
+            border: 1px solid #e0d0c0;
+            padding: 4px;
+        }
+
+        /* ===== 帮助提示 ===== */
+        .help-tip {
+            background: #f5ede4;
+            border-left: 4px solid var(--gold);
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #4a3a2a;
+            margin: 6px 0 12px 0;
+        }
+        .help-tip code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            border: 1px solid #e0d0c0;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width:768px) {
+            .topbar .brand {
+                font-size: 18px;
+            }
+            .topbar .actions button {
+                font-size: 12px;
+                padding: 5px 12px;
+            }
+            .sidebar {
+                width: 200px;
+                min-width: 150px;
+            }
+            .content {
+                padding: 14px 16px;
+            }
+            .dashboard-grid,
+            .dashboard-list {
+                grid-template-columns: 1fr;
+            }
+            .topbar .datetime-display {
+                font-size: 13px;
+                padding: 2px 12px;
+                margin-left: 8px;
+            }
+        }
+        @media (max-width:576px) {
+            .main-wrap {
+                flex-direction: column;
+                height: auto;
+            }
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
+                flex-direction: column;
+            }
+            .sidebar .tree-node .children {
+                padding-left: 12px;
+            }
+            .content {
+                height: auto;
+                min-height: 60vh;
+            }
+            .topbar .datetime-display {
+                display: none;
+            }
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5ede4;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d0c0b0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b0a090;
+        }
+        .table-wrap table td img {
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 6px;
+            border: 1px solid #e0d0c0;
+            padding: 2px;
+            background: #fff;
+            object-fit: cover;
+        }
+
+        /* ===== 打印样式 ===== */
+        @media print {
+            .topbar,
+            .sidebar,
+            .panel-header .toolbar,
+            .search-bar,
+            .dashboard-stats,
+            .dashboard-group .group-actions,
+            .card-actions-edit,
+            .add-stat-btn,
+            .record-card .card-checkbox,
+            .record-card .card-title .card-actions,
+            .batch-toolbar,
+            .topbar .datetime-display {
+                display: none !important;
+            }
+            .record-card {
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+                margin-bottom: 16px;
+            }
+            .record-card .card-body {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            .record-card .card-title {
+                padding-right: 0 !important;
+            }
+            .dashboard-card {
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+            }
+            .dashboard-grid,
+            .dashboard-list {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+                gap: 16px !important;
+            }
+            .dashboard-card .card-header h3 {
+                font-size: 16px !important;
+            }
+            body {
+                background: #fff !important;
+            }
+            .content {
+                padding: 10px !important;
+                background: #fff !important;
+            }
+            .panel-header h2 i {
+                display: none !important;
+            }
+            .panel-header h2 {
+                font-size: 22px !important;
+                text-align: center !important;
+                width: 100% !important;
+                justify-content: center !important;
+                border-bottom: 2px solid #d4a843 !important;
+                padding-bottom: 10px !important;
+            }
+            .panel-header {
+                border-bottom: none !important;
+            }
+            .record-card .meta-info {
+                color: #999 !important;
+            }
+            .print-time {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 登录覆盖层 ===== -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <div class="logo"><i class="fas fa-flag"></i></div>
+            <h2>党建引领 · 村务平台</h2>
+            <div class="sub">请输入用户名和密码登录</div>
+            <div id="loginError" class="login-error" style="display:none;"></div>
+            <div class="form-group">
+                <label><i class="fas fa-user" style="margin-right:6px;color:var(--gold);"></i> 用户名</label>
+                <input type="text" id="loginUsername" placeholder="admin" value="admin" />
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock" style="margin-right:6px;color:var(--gold);"></i> 密码</label>
+                <input type="password" id="loginPassword" placeholder="密码" value="123456" />
+            </div>
+            <div class="form-actions">
+                <button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登录</button>
+                <button class="btn-register" onclick="handleRegister()"><i class="fas fa-user-plus"></i> 注册</button>
+            </div>
+            <div class="footer-note">默认账号 admin / 123456</div>
+        </div>
+    </div>
+
+    <!-- ===== 主界面 ===== -->
+    <header class="topbar" id="mainApp" style="display:none;">
+        <div class="brand">
+            <span class="icon-wrapper" id="iconWrapper" onclick="changeIcon()">
+                <i id="brandIcon" class="fas fa-star"></i>
+                <img id="brandIconImg" style="display:none;" alt="Icon" />
+            </span>
+            <span class="title-text" id="platformTitleDisplay">党建引领 · 村务信息平台</span>
+            <button class="edit-title" onclick="editPlatformTitle()" title="修改平台标题"><i class="fas fa-pen"></i></button>
+            <small>村务版 v2.5</small>
+        </div>
+        <div class="datetime-display" id="currentDateTime"></div>
+        <div class="actions">
+            <button onclick="exportAllData()" title="导出所有数据（JSON）"><i class="fas fa-download"></i> 导出数据</button>
+            <button onclick="document.getElementById('importDataFile').click()" title="导入数据（JSON）"><i class="fas fa-upload"></i> 导入数据</button>
+            <input type="file" id="importDataFile" class="hidden-input" accept=".json" onchange="importAllData(event)" />
+            <button onclick="logout()" class="danger" title="退出登录"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+    </header>
+
+    <div class="main-wrap" id="mainAppContent" style="display:none;">
+        <nav class="sidebar" id="moduleList">
+            <div class="module-count" id="moduleCount">共 0 个模块</div>
+        </nav>
+
+        <main class="content" id="contentArea">
+            <div class="panel-header">
+                <h2><i class="fas fa-folder-open"></i> <span id="currentModuleTitle">请选择模块</span></h2>
+                <div class="toolbar" id="toolbarContainer"></div>
+            </div>
+
+            <!-- 模块内搜索栏 -->
+            <div class="search-bar" id="searchBar" style="display:none;">
+                <input type="text" id="searchInput" placeholder="🔍 搜索当前模块（标题/内容）..." />
+                <button class="search-btn" onclick="searchRecords()"><i class="fas fa-search"></i> 搜索</button>
+                <button class="clear-btn" onclick="clearSearch()"><i class="fas fa-times"></i> 清除</button>
+                <span class="search-info" id="searchInfo"></span>
+            </div>
+
+            <div class="table-wrap" id="tableWrap">
+                <div class="empty-tip">
+                    <i class="fas fa-inbox"></i>
+                    请从左侧选择一个模块，或添加新模块开始使用
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box" id="modalBox">
+            <h3 id="modalTitle"><i class="fas fa-edit"></i> <span>标题</span></h3>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <div class="toast-msg" id="toast"></div>
+
+    <script>
+        // ============================================================
+        //  完整 JavaScript
+        // ============================================================
+
+        // ---- 用户认证管理 ----
+        const USER_KEY = 'villageUsers';
+        const SESSION_KEY = 'villageSession';
+
+        function getUsers() {
+            try {
+                const raw = localStorage.getItem(USER_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch (e) {}
+            return {};
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem(USER_KEY, JSON.stringify(users));
+        }
+
+        function getSession() {
+            return localStorage.getItem(SESSION_KEY) || null;
+        }
+
+        function setSession(username) {
+            localStorage.setItem(SESSION_KEY, username);
+        }
+
+        function clearSession() {
+            localStorage.removeItem(SESSION_KEY);
+        }
+
+        function initUsers() {
+            const users = getUsers();
+            if (!users.admin) {
+                users.admin = '123456';
+                saveUsers(users);
+            }
+        }
+        initUsers();
+
+        function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorEl = document.getElementById('loginError');
+            errorEl.style.display = 'none';
+            if (!username || !password) {
+                errorEl.textContent = '请输入用户名和密码';
+                errorEl.style.display = 'block';
+                return;
+            }
+            const users = getUsers();
+            if (users[username] && users[username] === password) {
+                setSession(username);
+                showMainApp();
+                showToast('登录成功', 'success');
+            } else {
+                errorEl.textContent = '用户名或密码错误';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        function handleRegister() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorEl = document.getElementById('loginError');
+            errorEl.style.display = 'none';
+            if (!username || !password) {
+                errorEl.textContent = '请输入用户名和密码';
+                errorEl.style.display = 'block';
+                return;
+            }
+            if (password.length < 4) {
+                errorEl.textContent = '密码至少4位';
+                errorEl.style.display = 'block';
+                return;
+            }
+            const users = getUsers();
+            if (users[username]) {
+                errorEl.textContent = '用户名已存在';
+                errorEl.style.display = 'block';
+                return;
+            }
+            users[username] = password;
+            saveUsers(users);
+            setSession(username);
+            showMainApp();
+            showToast('注册成功，已自动登录', 'success');
+        }
+
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                clearSession();
+                location.reload();
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('mainApp').style.display = 'flex';
+            document.getElementById('mainAppContent').style.display = 'flex';
+            document.getElementById('platformTitleDisplay').textContent = loadPlatformTitle();
+            renderPlatformIcon();
+
+            if (!window._clockInterval) {
+                updateDateTime();
+                window._clockInterval = setInterval(updateDateTime, 1000);
+            }
+            if (!window._appInitialized) {
+                initPlatform();
+                window._appInitialized = true;
+            } else {
+                renderModuleList();
+                if (currentModuleId === DASHBOARD_ID) {
+                    renderDashboard();
+                } else if (currentModuleId) {
+                    renderRecords(currentModuleId);
+                }
+            }
+        }
+
+        // ---- 实时时钟 ----
+        function updateDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            const weekday = weekdays[now.getDay()];
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const dateTimeStr = `${year}年${month}月${day}日 星期${weekday} ${hours}:${minutes}:${seconds}`;
+            const el = document.getElementById('currentDateTime');
+            if (el) el.textContent = dateTimeStr;
+        }
+
+        // ---- 数据层 ----
+        const STORAGE_KEY = 'villagePlatformData';
+        const DASHBOARD_CONFIG_KEY = 'dashboardConfig';
+        const PLATFORM_TITLE_KEY = 'platformTitle';
+        const PLATFORM_ICON_KEY = 'platformIcon';
+        const PLATFORM_ICON_TYPE_KEY = 'platformIconType';
+        const PLATFORM_ICON_DATA_KEY = 'platformIconData';
+        const DASHBOARD_ID = 'dashboard';
+
+        function getDefaultData() {
+            return { modules: [], records: {} };
+        }
+
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (!parsed.records) parsed.records = {};
+                    if (parsed.modules) {
+                        const moduleIds = new Set(parsed.modules.map(m => m.id));
+                        parsed.modules.forEach(m => {
+                            if (m.fields === undefined) m.fields = ['标题', '内容', '日期'];
+                            if (m.parentId === undefined || m.parentId === null || m.parentId === '' || m.parentId ===
+                                'null' || m.parentId === 'undefined') {
+                                m.parentId = null;
+                            } else if (!moduleIds.has(m.parentId)) {
+                                m.parentId = null;
+                            }
+                            if (m.documentHtml === undefined) m.documentHtml = null;
+                            if (m.note === undefined) m.note = '';
+                            if (m.visible === undefined) m.visible = true;
+                        });
+                    }
+                    return parsed;
+                }
+            } catch (e) { console.warn('数据加载失败，使用默认数据', e); }
+            return getDefaultData();
+        }
+
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function loadPlatformTitle() {
+            return localStorage.getItem(PLATFORM_TITLE_KEY) || '党建引领 · 村务信息平台';
+        }
+        function savePlatformTitle(title) {
+            localStorage.setItem(PLATFORM_TITLE_KEY, title);
+            document.getElementById('platformTitleDisplay').textContent = title;
+        }
+
+        function loadPlatformIcon() {
+            return localStorage.getItem(PLATFORM_ICON_KEY) || 'fa-star';
+        }
+        function savePlatformIcon(iconClass) {
+            localStorage.setItem(PLATFORM_ICON_KEY, iconClass);
+            localStorage.removeItem(PLATFORM_ICON_TYPE_KEY);
+            localStorage.removeItem(PLATFORM_ICON_DATA_KEY);
+            renderPlatformIcon();
+        }
+        function loadPlatformIconType() {
+            return localStorage.getItem(PLATFORM_ICON_TYPE_KEY) || 'font';
+        }
+        function savePlatformIconType(type) {
+            localStorage.setItem(PLATFORM_ICON_TYPE_KEY, type);
+        }
+        function loadPlatformIconData() {
+            return localStorage.getItem(PLATFORM_ICON_DATA_KEY) || null;
+        }
+        function savePlatformIconData(data) {
+            localStorage.setItem(PLATFORM_ICON_DATA_KEY, data);
+        }
+        function renderPlatformIcon() {
+            const type = loadPlatformIconType();
+            const iconEl = document.getElementById('brandIcon');
+            const imgEl = document.getElementById('brandIconImg');
+            if (type === 'image') {
+                const data = loadPlatformIconData();
+                if (data) {
+                    iconEl.style.display = 'none';
+                    imgEl.style.display = 'block';
+                    imgEl.src = data;
+                } else {
+                    iconEl.style.display = 'inline';
+                    imgEl.style.display = 'none';
+                    iconEl.className = 'fas ' + loadPlatformIcon();
+                }
+            } else {
+                iconEl.style.display = 'inline';
+                imgEl.style.display = 'none';
+                iconEl.className = 'fas ' + loadPlatformIcon();
+            }
+        }
+
+        function loadDashboardConfig() {
+            try {
+                const raw = localStorage.getItem(DASHBOARD_CONFIG_KEY);
+                if (raw) {
+                    const config = JSON.parse(raw);
+                    if (config.modules && Array.isArray(config.modules)) {
+                        config.modules.forEach(c => {
+                            if (c.formulas === undefined) c.formulas = [];
+                            if (c.visible === undefined) c.visible = true;
+                            if (c.note === undefined) c.note = '';
+                        });
+                        return config;
+                    }
+                }
+            } catch (e) {}
+            return { modules: [] };
+        }
+        function saveDashboardConfig(config) {
+            localStorage.setItem(DASHBOARD_CONFIG_KEY, JSON.stringify(config));
+        }
+
+        let appData = loadData();
+        let dashboardConfig = loadDashboardConfig();
+
+        appData.modules.forEach(mod => {
+            if (!dashboardConfig.modules.find(c => c.id === mod.id)) {
+                dashboardConfig.modules.push({ id: mod.id, visible: true, note: '', formulas: [] });
+            }
+        });
+        saveDashboardConfig(dashboardConfig);
+
+        // ---- 状态 ----
+        let currentModuleId = null;
+        let selectedIds = new Set();
+        let isDashboardEditMode = false;
+        let expandedNodes = new Set();
+        let searchKeyword = '';
+        let globalSearchKeyword = '';
+
+        // ---- DOM 引用 ----
+        const $ = id => document.getElementById(id);
+        const moduleListEl = $('moduleList');
+        const tableWrap = $('tableWrap');
+        const currentModuleTitle = $('currentModuleTitle');
+        const modalOverlay = $('modalOverlay');
+        const modalTitle = $('modalTitle');
+        const modalBody = $('modalBody');
+        const toastEl = $('toast');
+        const toolbarContainer = $('toolbarContainer');
+        const searchBar = $('searchBar');
+        const searchInput = $('searchInput');
+        const searchInfo = $('searchInfo');
+
+        let toastTimer = null;
+
+        function showToast(msg, type = 'info', duration = 2200) {
+            if (toastTimer) { clearTimeout(toastTimer);
+                toastEl.classList.remove('show'); }
+            toastEl.textContent = msg;
+            toastEl.className = 'toast-msg ' + type;
+            void toastEl.offsetWidth;
+            toastEl.classList.add('show');
+            toastTimer = setTimeout(() => {
+                toastEl.classList.remove('show');
+                toastTimer = null;
+            }, duration);
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function getAllModules() {
+            return appData.modules || [];
+        }
+        function getRootModules() {
+            const all = getAllModules();
+            const ids = new Set(all.map(m => m.id));
+            return all.filter(m => !m.parentId || !ids.has(m.parentId));
+        }
+        function getChildModules(parentId) {
+            return getAllModules().filter(m => m.parentId === parentId);
+        }
+
+        // ---- 图标更换 ----
+        const presetIcons = ['fa-star', 'fa-flag', 'fa-crown', 'fa-gem', 'fa-fire', 'fa-bolt',
+            'fa-leaf', 'fa-heart', 'fa-shield-alt', 'fa-handshake', 'fa-users', 'fa-tree'
+        ];
+        let tempIconFileData = null;
+
+        function changeIcon() {
+            tempIconFileData = null;
+            const currentType = loadPlatformIconType();
+            const currentIcon = loadPlatformIcon();
+            const currentData = loadPlatformIconData();
+
+            let html = `
+                <h3><i class="fas fa-palette"></i> 更换顶部图标</h3>
+                <div class="icon-select-grid">
+            `;
+            presetIcons.forEach(icon => {
+                const selected = (currentType === 'font' && icon === currentIcon) ? 'selected' : '';
+                html += `
+                    <div class="icon-option ${selected}" onclick="selectIcon('${icon}')">
+                        <i class="fas ${icon}"></i>
+                        <div class="icon-label">${icon.replace('fa-','')}</div>
+                    </div>
+                `;
+            });
+            html += `
+                </div>
+                <div class="form-group">
+                    <label>或输入自定义图标类名（如 fa-star）</label>
+                    <input type="text" id="customIconInput" placeholder="fa-xxx" value="${currentType === 'font' ? currentIcon : ''}" />
+                </div>
+                <div class="form-group">
+                    <label>上传自定义图片（支持 png, jpg, svg）</label>
+                    <div class="icon-upload-area" id="iconUploadArea">
+                        <input type="file" id="iconFileInput" accept=".png,.jpg,.jpeg,.gif,.svg" />
+                        <div class="hint"><i class="fas fa-cloud-upload-alt"></i> 点击选择图片</div>
+                    </div>
+                    ${currentType === 'image' && currentData ? `<div class="icon-preview"><span>当前图片：</span><img src="${currentData}" alt="当前图标" /></div>` : ''}
+                    <div class="file-selected" id="iconFileInfo"></div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn-submit" onclick="confirmIconChange()">确认更换</button>
+                </div>
+            `;
+            modalTitle.innerHTML = `<i class="fas fa-paint-brush"></i> 更换图标`;
+            modalBody.innerHTML = html;
+            modalOverlay.classList.add('show');
+
+            const fileInput = document.getElementById('iconFileInput');
+            const uploadArea = document.getElementById('iconUploadArea');
+            const fileInfo = document.getElementById('iconFileInfo');
+
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', function(e) {
+                const file = this.files[0];
+                if (!file) {
+                    fileInfo.textContent = '';
+                    tempIconFileData = null;
+                    return;
+                }
+                fileInfo.textContent = `已选择：${file.name}`;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempIconFileData = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function selectIcon(icon) {
+            document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
+            const target = document.querySelector(`.icon-option .fas.${icon}`)?.closest('.icon-option');
+            if (target) target.classList.add('selected');
+            document.getElementById('customIconInput').value = icon;
+            document.getElementById('iconFileInfo').textContent = '';
+            tempIconFileData = null;
+        }
+
+        function confirmIconChange() {
+            if (tempIconFileData) {
+                savePlatformIconType('image');
+                savePlatformIconData(tempIconFileData);
+                renderPlatformIcon();
+                closeModal();
+                showToast('图标已更新为自定义图片', 'success');
+                return;
+            }
+            const input = document.getElementById('customIconInput');
+            let icon = input.value.trim();
+            if (!icon) {
+                showToast('请选择或输入图标', 'error');
+                return;
+            }
+            if (!icon.startsWith('fa-')) {
+                icon = 'fa-' + icon;
+            }
+            savePlatformIconType('font');
+            savePlatformIcon(icon);
+            renderPlatformIcon();
+            closeModal();
+            showToast('图标已更新', 'success');
+        }
+
+        function editPlatformTitle() {
+            const current = loadPlatformTitle();
+            const newTitle = prompt('请输入平台标题：', current);
+            if (newTitle !== null && newTitle.trim() !== '') {
+                savePlatformTitle(newTitle.trim());
+                showToast('标题已更新', 'success');
+            }
+        }
+
+        // ---- 模块树渲染 ----
+        function renderModuleList() {
+            moduleListEl.innerHTML = '';
+            const dashboardBtn = document.createElement('button');
+            dashboardBtn.className = 'dashboard-btn';
+            dashboardBtn.innerHTML = '<i class="fas fa-chart-pie"></i> 📊 数据看板';
+            dashboardBtn.addEventListener('click', () => {
+                selectModule(DASHBOARD_ID);
+            });
+            moduleListEl.appendChild(dashboardBtn);
+
+            const roots = getRootModules();
+            if (roots.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.style.cssText = 'text-align:center;color:#b0a090;padding:20px 0;font-size:14px;';
+                emptyMsg.innerHTML = '<i class="fas fa-folder-open" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.4;"></i>暂无模块，请点击下方添加';
+                moduleListEl.appendChild(emptyMsg);
+            } else {
+                roots.forEach(root => {
+                    const node = renderTreeNode(root, 0);
+                    moduleListEl.appendChild(node);
+                });
+            }
+            const addBtn = document.createElement('button');
+            addBtn.className = 'add-module';
+            addBtn.innerHTML = '<i class="fas fa-file-upload"></i> 上传文件创建顶级模块';
+            addBtn.addEventListener('click', () => showAddModuleModal(null));
+            moduleListEl.appendChild(addBtn);
+            const countSpan = document.createElement('div');
+            countSpan.className = 'module-count';
+            countSpan.id = 'moduleCount';
+            countSpan.textContent = `共 ${getAllModules().length} 个模块`;
+            moduleListEl.appendChild(countSpan);
+            updateTitle();
+            renderToolbar();
+        }
+
+        function renderTreeNode(mod, depth) {
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'tree-node';
+            nodeDiv.dataset.id = mod.id;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'node-content' + (mod.id === currentModuleId ? ' active' : '');
+            contentDiv.style.paddingLeft = (depth * 18 + 8) + 'px';
+
+            const children = getChildModules(mod.id);
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-btn';
+            if (children.length > 0) {
+                const isExpanded = expandedNodes.has(mod.id);
+                toggleBtn.innerHTML = isExpanded ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-right"></i>';
+                toggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleExpand(mod.id);
+                });
+            } else {
+                toggleBtn.innerHTML = '<span style="display:inline-block;width:14px;"></span>';
+                toggleBtn.style.cursor = 'default';
+            }
+            contentDiv.appendChild(toggleBtn);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'mod-name';
+            const icon = mod.id.startsWith('mod_') ? 'cube' : 'flag';
+            nameSpan.innerHTML = `<i class="fas fa-${icon}"></i>${escapeHtml(mod.name)}`;
+            contentDiv.appendChild(nameSpan);
+
+            const actions = document.createElement('div');
+            actions.className = 'node-actions';
+            const addChildBtn = document.createElement('button');
+            addChildBtn.innerHTML = '<i class="fas fa-plus-circle" style="color:#28a745;"></i>';
+            addChildBtn.title = '添加子模块';
+            addChildBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showAddModuleModal(mod.id);
+            });
+            actions.appendChild(addChildBtn);
+            const upBtn = document.createElement('button');
+            upBtn.className = 'move-up';
+            upBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+            upBtn.title = '上移';
+            upBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moveModuleNode(mod.id, -1);
+            });
+            actions.appendChild(upBtn);
+            const downBtn = document.createElement('button');
+            downBtn.className = 'move-down';
+            downBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+            downBtn.title = '下移';
+            downBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moveModuleNode(mod.id, 1);
+            });
+            actions.appendChild(downBtn);
+            const delBtn = document.createElement('button');
+            delBtn.className = 'del-mod';
+            delBtn.innerHTML = '<i class="fas fa-times"></i>';
+            delBtn.title = '删除模块及其子模块';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteModule(mod.id);
+            });
+            actions.appendChild(delBtn);
+            contentDiv.appendChild(actions);
+
+            contentDiv.addEventListener('click', () => {
+                selectModule(mod.id);
+            });
+
+            nodeDiv.appendChild(contentDiv);
+
+            if (children.length > 0 && expandedNodes.has(mod.id)) {
+                const childContainer = document.createElement('div');
+                childContainer.className = 'children';
+                children.forEach(child => {
+                    const childNode = renderTreeNode(child, depth + 1);
+                    childContainer.appendChild(childNode);
+                });
+                nodeDiv.appendChild(childContainer);
+            }
+
+            return nodeDiv;
+        }
+
+        function toggleExpand(modId) {
+            if (expandedNodes.has(modId)) {
+                expandedNodes.delete(modId);
+            } else {
+                expandedNodes.add(modId);
+            }
+            renderModuleList();
+        }
+
+        function moveModuleNode(modId, direction) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) return;
+            const parentId = mod.parentId;
+            const siblings = getAllModules().filter(m => m.parentId === parentId);
+            const idx = siblings.findIndex(m => m.id === modId);
+            if (idx === -1) return;
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= siblings.length) return;
+            const sibling = siblings[targetIdx];
+            const all = appData.modules;
+            const idxA = all.indexOf(mod);
+            const idxB = all.indexOf(sibling);
+            if (idxA === -1 || idxB === -1) return;
+            [all[idxA], all[idxB]] = [all[idxB], all[idxA]];
+            saveData(appData);
+            renderModuleList();
+            showToast('模块顺序已调整', 'info', 1200);
+        }
+
+        // ---- 选择模块 ----
+        function selectModule(modId) {
+            if (!modId) return;
+            if (modId === DASHBOARD_ID) {
+                currentModuleId = DASHBOARD_ID;
+                selectedIds.clear();
+                searchKeyword = '';
+                globalSearchKeyword = '';
+                renderModuleList();
+                renderDashboard();
+                return;
+            }
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) {
+                if (getAllModules().length > 0) {
+                    modId = getAllModules()[0].id;
+                } else {
+                    currentModuleId = null;
+                    renderModuleList();
+                    renderEmpty();
+                    return;
+                }
+            }
+            currentModuleId = modId;
+            selectedIds.clear();
+            searchKeyword = '';
+            globalSearchKeyword = '';
+            renderModuleList();
+            renderRecords(modId);
+        }
+
+        function renderEmpty() {
+            tableWrap.innerHTML = `
+                <div class="empty-tip">
+                    <i class="fas fa-inbox"></i>
+                    请从左侧选择一个模块，或添加新模块开始使用
+                </div>
+            `;
+            currentModuleTitle.textContent = '请选择模块';
+            renderToolbar();
+            searchBar.style.display = 'none';
+            if (searchInfo) searchInfo.textContent = '';
+        }
+
+        function updateTitle() {
+            if (currentModuleId === DASHBOARD_ID) {
+                currentModuleTitle.textContent = '📊 数据看板';
+                return;
+            }
+            const mod = getAllModules().find(m => m.id === currentModuleId);
+            currentModuleTitle.textContent = mod ? mod.name : '请选择模块';
+        }
+
+        // ---- 获取文档的所有可搜索文本 ----
+        function getDocumentSearchText(rec) {
+            let texts = [];
+            if (rec['标题']) texts.push(rec['标题']);
+            if (rec['内容']) {
+                let content = rec['内容'];
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                if (textContent.trim()) texts.push(textContent.trim());
+                texts.push(content);
+            }
+            const fields = ['日期', '来源', '备注'];
+            fields.forEach(f => {
+                if (rec[f]) texts.push(rec[f]);
+            });
+            return texts.join(' ');
+        }
+
+        // ---- 高亮搜索关键词 ----
+        function highlightKeyword(text, keyword) {
+            if (!keyword || !text) return text;
+            try {
+                const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escaped, 'gi');
+                return text.replace(regex, match => `<span class="search-highlight">${match}</span>`);
+            } catch (e) { return text; }
+        }
+
+        // ---- 渲染文档列表 ----
+        function renderRecords(modId) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) { renderEmpty(); return; }
+            if (!mod.fields || mod.fields.length === 0) {
+                mod.fields = ['标题', '内容', '日期'];
+                saveData(appData);
+            }
+            const records = appData.records[modId] || [];
+            currentModuleTitle.textContent = mod.name;
+
+            searchBar.style.display = 'flex';
+            if (searchInput) searchInput.value = searchKeyword;
+
+            let filteredRecords = records;
+            let searchInfoText = '';
+            if (searchKeyword.trim() !== '') {
+                const keyword = searchKeyword.trim().toLowerCase();
+                filteredRecords = records.filter(rec => {
+                    const searchText = getDocumentSearchText(rec).toLowerCase();
+                    return searchText.includes(keyword);
+                });
+                const total = records.length;
+                const found = filteredRecords.length;
+                searchInfoText = `找到 ${found} 篇 / 共 ${total} 篇`;
+            } else {
+                searchInfoText = `共 ${records.length} 篇文档`;
+            }
+            if (searchInfo) searchInfo.textContent = searchInfoText;
+
+            if (filteredRecords.length === 0) {
+                const msg = records.length === 0 ?
+                    '当前模块暂无文档，请点击“新建文档”或导入文件' :
+                    `没有找到包含 “<strong>${escapeHtml(searchKeyword.trim())}</strong>” 的文档`;
+                tableWrap.innerHTML = `
+                    <div class="no-search-result">
+                        <i class="fas fa-search"></i>
+                        ${msg}
+                    </div>
+                `;
+                renderToolbar();
+                return;
+            }
+
+            let html = `<div class="record-list">`;
+            filteredRecords.forEach((rec, idx) => {
+                const title = rec['标题'] || `文档 #${idx+1}`;
+                let content = rec['内容'] || '';
+                const date = rec['日期'] || '';
+                const checked = selectedIds.has(rec.id) ? 'checked' : '';
+
+                let displayTitle = title;
+                let displayContent = content;
+                if (searchKeyword.trim() !== '') {
+                    displayTitle = highlightKeyword(title, searchKeyword.trim());
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = content;
+                    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                    if (textContent) {
+                        const highlightedText = highlightKeyword(textContent, searchKeyword.trim());
+                        displayContent = highlightedText.replace(/\n/g, '<br>');
+                    } else {
+                        displayContent = content;
+                    }
+                }
+
+                html += `<div class="record-card" data-rec-id="${rec.id}">`;
+                html += `<div class="card-checkbox"><input type="checkbox" class="doc-checkbox" data-id="${rec.id}" ${checked} onchange="toggleDocSelect('${rec.id}')" /></div>`;
+                html += `<div class="card-title">
+                            <span>${displayTitle}</span>
+                            <div class="card-actions">
+                                <button class="edit" onclick="showEditDocumentModal('${modId}','${rec.id}')" title="编辑"><i class="fas fa-pen"></i></button>
+                                <button class="del" onclick="deleteRecord('${modId}','${rec.id}')" title="删除"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                html += `<div class="card-body">`;
+                if (displayContent) {
+                    if (/<table/i.test(displayContent)) {
+                        html += `<div class="resize-table-container">${displayContent}</div>`;
+                    } else {
+                        html += `<div class="content-html">${displayContent}</div>`;
+                    }
+                }
+                if (date) {
+                    html += `<div class="meta-info">📅 ${escapeHtml(date)}</div>`;
+                }
+                html += `</div></div>`;
+            });
+            html += `</div>`;
+
+            html += `
+                <div class="batch-toolbar" style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;padding:8px 16px;border-radius:8px;box-shadow:var(--shadow);">
+                    <label style="font-size:14px;display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" id="selectAllDocs" onchange="toggleAllDocs()" /> 全选
+                    </label>
+                    <button class="danger" onclick="batchDeleteDocs()" style="padding:4px 16px;border:none;border-radius:20px;background:#c0392b;color:#fff;cursor:pointer;font-size:13px;">
+                        <i class="fas fa-trash-alt"></i> 一键删除选中
+                    </button>
+                    <button onclick="printSelectedDocs()" style="padding:4px 16px;border:none;border-radius:20px;background:#2c6b9e;color:#fff;cursor:pointer;font-size:13px;">
+                        <i class="fas fa-print"></i> 打印选中
+                    </button>
+                    <span style="font-size:13px;color:#6a5a4a;">已选 <span id="selectedCount">${selectedIds.size}</span> 篇</span>
+                </div>
+            `;
+
+            tableWrap.innerHTML = html;
+            renderToolbar();
+            updateSelectedCount();
+        }
+
+        // ---- 文档复选框操作 ----
+        function toggleDocSelect(recId) {
+            const cb = document.querySelector(`.doc-checkbox[data-id="${recId}"]`);
+            if (!cb) return;
+            if (cb.checked) {
+                selectedIds.add(recId);
+            } else {
+                selectedIds.delete(recId);
+            }
+            updateSelectedCount();
+            const allCbs = document.querySelectorAll('.doc-checkbox');
+            const allChecked = allCbs.length > 0 && Array.from(allCbs).every(c => c.checked);
+            const selectAll = document.getElementById('selectAllDocs');
+            if (selectAll) selectAll.checked = allChecked;
+        }
+
+        function toggleAllDocs() {
+            const selectAll = document.getElementById('selectAllDocs');
+            if (!selectAll) return;
+            const checked = selectAll.checked;
+            const allCbs = document.querySelectorAll('.doc-checkbox');
+            allCbs.forEach(cb => {
+                cb.checked = checked;
+                const id = cb.dataset.id;
+                if (checked) selectedIds.add(id);
+                else selectedIds.delete(id);
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const el = document.getElementById('selectedCount');
+            if (el) el.textContent = selectedIds.size;
+        }
+
+        function batchDeleteDocs() {
+            if (selectedIds.size === 0) {
+                showToast('请先勾选要删除的文档', 'error');
+                return;
+            }
+            if (!confirm(`确定要删除选中的 ${selectedIds.size} 篇文档吗？此操作不可撤销！`)) return;
+            const records = appData.records[currentModuleId];
+            if (!records) { showToast('文档不存在', 'error'); return; }
+            const idsToDelete = new Set(selectedIds);
+            const newRecords = records.filter(r => !idsToDelete.has(r.id));
+            appData.records[currentModuleId] = newRecords;
+            selectedIds.clear();
+            saveData(appData);
+            renderRecords(currentModuleId);
+            showToast(`已成功删除 ${idsToDelete.size} 篇文档`, 'success');
+        }
+
+        function printSelectedDocs() {
+            if (selectedIds.size === 0) {
+                showToast('请先勾选要打印的文档', 'error');
+                return;
+            }
+            const cards = document.querySelectorAll('.record-card');
+            if (cards.length === 0) {
+                showToast('没有找到文档', 'error');
+                return;
+            }
+            const originals = [];
+            cards.forEach(card => {
+                const id = card.dataset.recId;
+                if (!selectedIds.has(id)) {
+                    card.style.display = 'none';
+                    originals.push({ card, display: 'none' });
+                } else {
+                    card.style.display = '';
+                    originals.push({ card, display: '' });
+                }
+            });
+            window.print();
+            const restore = () => {
+                originals.forEach(({ card, display }) => {
+                    card.style.display = display;
+                });
+                window.onafterprint = null;
+            };
+            if (window.onafterprint !== undefined) {
+                window.onafterprint = restore;
+            } else {
+                setTimeout(restore, 500);
+            }
+        }
+
+        // ---- 模块内搜索 ----
+        function searchRecords() {
+            const keyword = searchInput ? searchInput.value.trim() : '';
+            searchKeyword = keyword;
+            if (currentModuleId && currentModuleId !== DASHBOARD_ID) {
+                renderRecords(currentModuleId);
+                if (searchInput) searchInput.focus();
+            } else {
+                showToast('请先在左侧选择一个模块进行搜索', 'info');
+            }
+        }
+
+        function clearSearch() {
+            if (searchInput) searchInput.value = '';
+            searchKeyword = '';
+            if (currentModuleId && currentModuleId !== DASHBOARD_ID) {
+                renderRecords(currentModuleId);
+            }
+            if (searchInput) searchInput.focus();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchRecords();
+                    }
+                });
+            }
+        });
+
+        // ---- 新建文档 ----
+        function showNewDocumentModal(modId) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) {
+                showToast('模块不存在', 'error');
+                return;
+            }
+            modalTitle.innerHTML = `<i class="fas fa-file-alt"></i> 新建文档 - ${mod.name}`;
+            modalBody.innerHTML = `
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="docTitle" placeholder="请输入文档标题" />
+                </div>
+                <div class="form-group">
+                    <label>正文内容（支持HTML，可直接粘贴）</label>
+                    <div class="editor-toolbar">
+                        <button type="button" onclick="insertText('<b>','</b>')"><b>B</b></button>
+                        <button type="button" onclick="insertText('<i>','</i>')"><i>I</i></button>
+                        <button type="button" onclick="insertText('<u>','</u>')"><u>U</u></button>
+                        <button type="button" onclick="insertText('<br>','')">换行</button>
+                        <button type="button" onclick="insertTable()">插入表格</button>
+                        <button type="button" onclick="uploadImageToEditor()">插入图片</button>
+                    </div>
+                    <textarea id="docContent" rows="12" placeholder="输入文档内容，支持HTML标签..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn-submit" onclick="confirmNewDocument('${modId}')">保存</button>
+                </div>
+            `;
+            modalOverlay.classList.add('show');
+
+            window.insertText = function(openTag, closeTag) {
+                const textarea = document.getElementById('docContent');
+                if (!textarea) return;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = textarea.value;
+                const before = text.substring(0, start);
+                const selected = text.substring(start, end);
+                const after = text.substring(end);
+                textarea.value = before + openTag + selected + closeTag + after;
+                const newCursor = start + openTag.length + selected.length + closeTag.length;
+                textarea.selectionStart = newCursor;
+                textarea.selectionEnd = newCursor;
+                textarea.focus();
+            };
+            window.insertTable = function() {
+                const textarea = document.getElementById('docContent');
+                if (!textarea) return;
+                const tableHtml = `<table border="1" cellpadding="4" style="border-collapse:collapse;width:100%;">
+                    <tr><th>列1</th><th>列2</th></tr>
+                    <tr><td>数据1</td><td>数据2</td></tr>
+                </table>`;
+                const start = textarea.selectionStart;
+                const text = textarea.value;
+                textarea.value = text.substring(0, start) + tableHtml + text.substring(start);
+                textarea.focus();
+            };
+            window.uploadImageToEditor = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function(e) {
+                    const file = this.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const imgHtml = `<img src="${ev.target.result}" style="max-width:100%;" />`;
+                        const textarea = document.getElementById('docContent');
+                        if (textarea) {
+                            const start = textarea.selectionStart;
+                            const text = textarea.value;
+                            textarea.value = text.substring(0, start) + imgHtml + text.substring(start);
+                            textarea.focus();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+            };
+
+            setTimeout(() => {
+                document.getElementById('docTitle').focus();
+            }, 150);
+        }
+
+        function confirmNewDocument(modId) {
+            const title = document.getElementById('docTitle').value.trim();
+            const content = document.getElementById('docContent').value.trim();
+            if (!title && !content) {
+                showToast('请至少输入标题或内容', 'error');
+                return;
+            }
+            const newRecord = {
+                id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                '标题': title || '无标题文档',
+                '内容': content,
+                '日期': new Date().toISOString().slice(0, 10)
+            };
+            if (!appData.records[modId]) appData.records[modId] = [];
+            appData.records[modId].push(newRecord);
+            const mod = getAllModules().find(m => m.id === modId);
+            if (mod) {
+                if (!mod.fields) mod.fields = ['标题', '内容', '日期'];
+                ['标题', '内容', '日期'].forEach(f => {
+                    if (!mod.fields.includes(f)) mod.fields.push(f);
+                });
+                saveData(appData);
+            }
+            saveData(appData);
+            closeModal();
+            renderRecords(modId);
+            showToast('文档创建成功', 'success');
+        }
+
+        // ---- 编辑文档 ----
+        function showEditDocumentModal(modId, recId) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) { showToast('模块不存在', 'error'); return; }
+            const records = appData.records[modId] || [];
+            const rec = records.find(r => r.id === recId);
+            if (!rec) { showToast('文档不存在', 'error'); return; }
+
+            const title = rec['标题'] || '';
+            const content = rec['内容'] || '';
+
+            modalTitle.innerHTML = `<i class="fas fa-edit"></i> 编辑文档`;
+            modalBody.innerHTML = `
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="editDocTitle" value="${escapeHtml(title)}" />
+                </div>
+                <div class="form-group">
+                    <label>正文内容（支持HTML）</label>
+                    <div class="editor-toolbar">
+                        <button type="button" onclick="insertEditText('<b>','</b>')"><b>B</b></button>
+                        <button type="button" onclick="insertEditText('<i>','</i>')"><i>I</i></button>
+                        <button type="button" onclick="insertEditText('<u>','</u>')"><u>U</u></button>
+                        <button type="button" onclick="insertEditText('<br>','')">换行</button>
+                        <button type="button" onclick="insertEditTable()">插入表格</button>
+                        <button type="button" onclick="uploadImageToEditEditor()">插入图片</button>
+                    </div>
+                    <textarea id="editDocContent" rows="12">${escapeHtml(content)}</textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn-submit" onclick="confirmEditDocument('${modId}','${recId}')">保存修改</button>
+                </div>
+            `;
+            modalOverlay.classList.add('show');
+
+            window.insertEditText = function(openTag, closeTag) {
+                const textarea = document.getElementById('editDocContent');
+                if (!textarea) return;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = textarea.value;
+                const before = text.substring(0, start);
+                const selected = text.substring(start, end);
+                const after = text.substring(end);
+                textarea.value = before + openTag + selected + closeTag + after;
+                const newCursor = start + openTag.length + selected.length + closeTag.length;
+                textarea.selectionStart = newCursor;
+                textarea.selectionEnd = newCursor;
+                textarea.focus();
+            };
+            window.insertEditTable = function() {
+                const textarea = document.getElementById('editDocContent');
+                if (!textarea) return;
+                const tableHtml = `<table border="1" cellpadding="4" style="border-collapse:collapse;width:100%;">
+                    <tr><th>列1</th><th>列2</th></tr>
+                    <tr><td>数据1</td><td>数据2</td></tr>
+                </table>`;
+                const start = textarea.selectionStart;
+                const text = textarea.value;
+                textarea.value = text.substring(0, start) + tableHtml + text.substring(start);
+                textarea.focus();
+            };
+            window.uploadImageToEditEditor = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = function(e) {
+                    const file = this.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const imgHtml = `<img src="${ev.target.result}" style="max-width:100%;" />`;
+                        const textarea = document.getElementById('editDocContent');
+                        if (textarea) {
+                            const start = textarea.selectionStart;
+                            const text = textarea.value;
+                            textarea.value = text.substring(0, start) + imgHtml + text.substring(start);
+                            textarea.focus();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+            };
+        }
+
+        function confirmEditDocument(modId, recId) {
+            const title = document.getElementById('editDocTitle').value.trim();
+            const content = document.getElementById('editDocContent').value.trim();
+            if (!title && !content) {
+                showToast('请至少输入标题或内容', 'error');
+                return;
+            }
+            const records = appData.records[modId] || [];
+            const rec = records.find(r => r.id === recId);
+            if (!rec) { showToast('文档不存在', 'error'); return; }
+            rec['标题'] = title || '无标题文档';
+            rec['内容'] = content;
+            rec['日期'] = new Date().toISOString().slice(0, 10);
+            saveData(appData);
+            closeModal();
+            renderRecords(modId);
+            showToast('文档已更新', 'success');
+        }
+
+        // ---- 导入Word ----
+        async function importWord(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (typeof mammoth === 'undefined') {
+                showToast('Word解析库未加载，请检查网络连接后刷新页面重试', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext !== 'docx') {
+                showToast('仅支持 .docx 格式的Word文档', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            if (!currentModuleId || currentModuleId === DASHBOARD_ID) {
+                showToast('请先选择一个模块再导入Word', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const mod = getAllModules().find(m => m.id === currentModuleId);
+            if (!mod) {
+                showToast('模块不存在', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            try {
+                const arrayBuffer = await readFileAsArrayBuffer(file);
+                const result = await mammoth.convertToHtml({ arrayBuffer });
+                const html = result.value;
+                let title = file.name.replace(/\.[^.]+$/, '');
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const firstP = doc.querySelector('p');
+                if (firstP && firstP.textContent.trim().length > 0) {
+                    title = firstP.textContent.trim().substring(0, 50);
+                }
+                const newRecord = {
+                    id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    '标题': title,
+                    '内容': html,
+                    '日期': new Date().toISOString().slice(0, 10)
+                };
+                if (!appData.records[currentModuleId]) appData.records[currentModuleId] = [];
+                appData.records[currentModuleId].push(newRecord);
+                if (!mod.fields) mod.fields = ['标题', '内容', '日期'];
+                ['标题', '内容', '日期'].forEach(f => {
+                    if (!mod.fields.includes(f)) mod.fields.push(f);
+                });
+                saveData(appData);
+                renderRecords(currentModuleId);
+                showToast('Word文档导入成功', 'success');
+            } catch (err) {
+                showToast('导入失败：' + err.message, 'error');
+                console.error(err);
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('文件读取失败'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // ---- 导入Excel ----
+        function importExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!currentModuleId || currentModuleId === DASHBOARD_ID) {
+                showToast('请先选择一个模块', 'error');
+                event.target.value = '';
+                return;
+            }
+            const mod = getAllModules().find(m => m.id === currentModuleId);
+            if (!mod) { showToast('模块不存在', 'error');
+                event.target.value = ''; return; }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    if (!jsonData || jsonData.length === 0) {
+                        showToast('Excel文件为空', 'error');
+                        event.target.value = '';
+                        return;
+                    }
+                    const headers = Object.keys(jsonData[0]);
+                    if (headers.length < 2) {
+                        showToast('至少需要2列数据', 'error');
+                        event.target.value = '';
+                        return;
+                    }
+
+                    mod.fields = headers;
+
+                    const records = jsonData.map(row => {
+                        const rec = { id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) };
+                        headers.forEach(h => {
+                            rec[h] = row[h] !== undefined ? String(row[h]).trim() : '';
+                        });
+                        return rec;
+                    }).filter(r => headers.some(h => r[h] && r[h].length > 0));
+
+                    let tableHtml =
+                        `<table border="1" cellpadding="4" style="border-collapse:collapse;width:100%;">`;
+                    tableHtml += `<thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>`;
+                    tableHtml += `<tbody>`;
+                    jsonData.forEach(row => {
+                        tableHtml +=
+                            `<tr>${headers.map(h => `<td>${escapeHtml(row[h] !== undefined ? String(row[h]) : '')}</td>`).join('')}</tr>`;
+                    });
+                    tableHtml += `</tbody></table>`;
+
+                    const title = file.name.replace(/\.[^.]+$/, '') || 'Excel数据';
+                    const newRecord = {
+                        id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                        '标题': title,
+                        '内容': tableHtml,
+                        '日期': new Date().toISOString().slice(0, 10),
+                        '_rawData': records,
+                        '_fields': headers
+                    };
+
+                    if (!appData.records[currentModuleId]) appData.records[currentModuleId] = [];
+                    appData.records[currentModuleId].push(newRecord);
+
+                    ['标题', '内容', '日期'].forEach(f => {
+                        if (!mod.fields.includes(f)) mod.fields.push(f);
+                    });
+                    saveData(appData);
+
+                    if (currentModuleId === DASHBOARD_ID) {
+                        renderDashboard();
+                    } else {
+                        renderRecords(currentModuleId);
+                    }
+                    showToast(`成功导入 ${records.length} 行数据`, 'success');
+                } catch (err) {
+                    showToast('导入失败：' + err.message, 'error');
+                }
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ---- 上传图片 ----
+        function uploadImageForModule(modId) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) {
+                showToast('模块不存在', 'error');
+                return;
+            }
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+            fileInput.click();
+
+            fileInput.onchange = function(e) {
+                const file = this.files[0];
+                if (!file) {
+                    document.body.removeChild(fileInput);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const imgHtml = `<img src="${ev.target.result}" style="max-width:100%;" />`;
+                    const title = file.name.replace(/\.[^.]+$/, '') || '图片';
+                    const newRecord = {
+                        id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                        '标题': title,
+                        '内容': imgHtml,
+                        '日期': new Date().toISOString().slice(0, 10)
+                    };
+                    if (!appData.records[modId]) appData.records[modId] = [];
+                    appData.records[modId].push(newRecord);
+                    if (!mod.fields) mod.fields = ['标题', '内容', '日期'];
+                    ['标题', '内容', '日期'].forEach(f => {
+                        if (!mod.fields.includes(f)) mod.fields.push(f);
+                    });
+                    saveData(appData);
+                    renderRecords(modId);
+                    showToast('图片上传成功，已生成文档', 'success');
+                    document.body.removeChild(fileInput);
+                };
+                reader.readAsDataURL(file);
+            };
+        }
+
+        // ---- 删除记录 ----
+        function deleteRecord(modId, recId) {
+            if (!modId || !recId) {
+                showToast('参数错误', 'error');
+                return;
+            }
+            if (!confirm('确定要删除此文档吗？')) return;
+            const records = appData.records[modId];
+            if (!records) { showToast('文档不存在', 'error'); return; }
+            const idx = records.findIndex(r => r.id === recId);
+            if (idx === -1) { showToast('文档不存在', 'error'); return; }
+            records.splice(idx, 1);
+            selectedIds.delete(recId);
+            saveData(appData);
+            renderRecords(modId);
+            showToast('文档已删除', 'success');
+        }
+
+        // ---- 删除模块 ----
+        function deleteModule(modId) {
+            if (!modId) return;
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) return;
+            const children = getChildModules(modId);
+            let confirmMsg = `确定要删除模块「${mod.name}」及其所有文档吗？`;
+            if (children.length > 0) {
+                confirmMsg += `\n该模块下有 ${children.length} 个子模块，将被一并删除！`;
+            }
+            if (!confirm(confirmMsg)) return;
+
+            function deleteSubmodules(parentId) {
+                const subs = getAllModules().filter(m => m.parentId === parentId);
+                subs.forEach(sub => {
+                    deleteSubmodules(sub.id);
+                    appData.modules = appData.modules.filter(m => m.id !== sub.id);
+                    delete appData.records[sub.id];
+                    dashboardConfig.modules = dashboardConfig.modules.filter(c => c.id !== sub.id);
+                });
+            }
+            deleteSubmodules(modId);
+            appData.modules = appData.modules.filter(m => m.id !== modId);
+            delete appData.records[modId];
+            dashboardConfig.modules = dashboardConfig.modules.filter(c => c.id !== modId);
+            saveData(appData);
+            saveDashboardConfig(dashboardConfig);
+            if (currentModuleId === modId) {
+                const remaining = getAllModules();
+                if (remaining.length > 0) {
+                    currentModuleId = remaining[0].id;
+                } else {
+                    currentModuleId = DASHBOARD_ID;
+                }
+            }
+            renderModuleList();
+            if (currentModuleId === DASHBOARD_ID) {
+                renderDashboard();
+            } else {
+                renderRecords(currentModuleId);
+            }
+            showToast(`模块「${mod.name}」已删除`, 'success');
+        }
+
+        // ---- 添加模块 ----
+        let tempImportData = null;
+        let tempDocumentHtml = null;
+        let currentParentId = null;
+
+        function showAddModuleModal(parentId) {
+            currentParentId = parentId || null;
+            tempImportData = null;
+            tempDocumentHtml = null;
+            const parentName = parentId ? (getAllModules().find(m => m.id === parentId)?.name || '顶级') : '顶级';
+            modalTitle.innerHTML = `<i class="fas fa-file-upload"></i> 创建模块（可上传文件初始化）`;
+            modalBody.innerHTML = `
+                <div class="form-group">
+                    <label>模块名称</label>
+                    <input type="text" id="newModuleName" placeholder="请输入模块名称" />
+                </div>
+                <div class="form-group">
+                    <label>上传初始化文件（可选，支持 .xlsx, .xls, .docx）</label>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="importFileForModule" accept=".xlsx,.xls,.docx" />
+                        <div class="hint"><i class="fas fa-cloud-upload-alt"></i> 点击选择文件</div>
+                        <div class="file-selected" id="fileSelectedInfo"></div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn-submit" onclick="confirmAddModule()">创建</button>
+                </div>
+            `;
+            modalOverlay.classList.add('show');
+
+            const fileInput = document.getElementById('importFileForModule');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInfo = document.getElementById('fileSelectedInfo');
+
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', function(e) {
+                const file = this.files[0];
+                if (!file) {
+                    fileInfo.textContent = '';
+                    tempImportData = null;
+                    tempDocumentHtml = null;
+                    return;
+                }
+                fileInfo.textContent = `已选择：${file.name}`;
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'xlsx' || ext === 'xls') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                            if (jsonData.length === 0) {
+                                showToast('文件为空或格式不正确', 'error');
+                                tempImportData = null;
+                                return;
+                            }
+                            tempImportData = jsonData;
+                            tempDocumentHtml = null;
+                            showToast(`成功读取 ${jsonData.length} 行数据`, 'success');
+                        } catch (err) {
+                            showToast('解析失败：' + err.message, 'error');
+                            tempImportData = null;
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else if (ext === 'docx') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const arrayBuffer = e.target.result;
+                            mammoth.convertToHtml({ arrayBuffer: arrayBuffer })
+                                .then(result => {
+                                    tempDocumentHtml = result.value;
+                                    tempImportData = null;
+                                    showToast('Word文档解析成功', 'success');
+                                })
+                                .catch(err => {
+                                    showToast('解析Word失败：' + err.message, 'error');
+                                    tempDocumentHtml = null;
+                                });
+                        } catch (err) {
+                            showToast('解析失败：' + err.message, 'error');
+                            tempDocumentHtml = null;
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    showToast('不支持的文件格式', 'error');
+                    tempImportData = null;
+                    tempDocumentHtml = null;
+                }
+            });
+
+            setTimeout(() => {
+                document.getElementById('newModuleName').focus();
+            }, 150);
+        }
+
+        function confirmAddModule() {
+            const name = document.getElementById('newModuleName').value.trim();
+            if (!name) {
+                showToast('请输入模块名称', 'error');
+                return;
+            }
+            const siblings = getAllModules().filter(m => m.parentId === currentParentId);
+            if (siblings.some(m => m.name === name)) {
+                showToast('同一父级下模块名称已存在', 'error');
+                return;
+            }
+
+            const id = 'mod_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            const newMod = {
+                id,
+                name,
+                parentId: currentParentId,
+                fields: ['标题', '内容', '日期'],
+                documentHtml: null
+            };
+
+            let records = [];
+            if (tempImportData && tempImportData.length > 0) {
+                const headers = Object.keys(tempImportData[0]);
+                const structured = tempImportData.map(row => {
+                    const rec = {};
+                    headers.forEach(h => {
+                        rec[h] = row[h] !== undefined ? String(row[h]).trim() : '';
+                    });
+                    return rec;
+                });
+                let tableHtml =
+                    `<table border="1" cellpadding="4" style="border-collapse:collapse;width:100%;">`;
+                tableHtml += `<thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>`;
+                tableHtml += `<tbody>`;
+                tempImportData.forEach(row => {
+                    tableHtml +=
+                        `<tr>${headers.map(h => `<td>${escapeHtml(row[h] !== undefined ? String(row[h]) : '')}</td>`).join('')}</tr>`;
+                });
+                tableHtml += `</tbody></table>`;
+                const rec = {
+                    id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    '标题': name + ' - 导入数据',
+                    '内容': tableHtml,
+                    '日期': new Date().toISOString().slice(0, 10),
+                    '_rawData': structured,
+                    '_fields': headers
+                };
+                records.push(rec);
+                newMod.fields = headers;
+            } else if (tempDocumentHtml) {
+                const rec = {
+                    id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                    '标题': name + ' - Word文档',
+                    '内容': tempDocumentHtml,
+                    '日期': new Date().toISOString().slice(0, 10)
+                };
+                records.push(rec);
+            }
+
+            appData.modules.push(newMod);
+            appData.records[id] = records;
+            dashboardConfig.modules.push({ id, visible: true, note: '', formulas: [] });
+            saveData(appData);
+            saveDashboardConfig(dashboardConfig);
+            closeModal();
+            if (currentParentId) {
+                expandedNodes.add(currentParentId);
+            }
+            renderModuleList();
+            selectModule(id);
+            renderRecords(id);
+            showToast(`模块「${name}」创建成功${records.length > 0 ? '，已包含初始文档' : ''}`, 'success');
+        }
+
+        // ============================================================
+        //  ★★★ 统计公式核心 ★★★
+        // ============================================================
+
+        function parseNumericValue(val) {
+            if (val === null || val === undefined || val === '') return NaN;
+            if (typeof val === 'number') return val;
+            let str = String(val).trim();
+            let percent = false;
+            if (str.endsWith('%')) {
+                percent = true;
+                str = str.slice(0, -1).trim();
+            }
+            str = str.replace(/,/g, '');
+            const num = parseFloat(str);
+            if (isNaN(num)) return NaN;
+            return percent ? num / 100 : num;
+        }
+
+        function parseCompareCondition(condition) {
+            const match = condition.match(/^(<=|>=|<|>)\s*(.+)$/);
+            if (match) {
+                const op = match[1];
+                const val = parseFloat(match[2].trim());
+                if (!isNaN(val)) {
+                    return { op, val };
+                }
+            }
+            return null;
+        }
+
+        function calculateFormula(formula, modId, fields, records) {
+            try {
+                const expr = formula.expression.trim();
+
+                const allRecords = appData.records[modId] || [];
+                let dataRows = [];
+                allRecords.forEach(rec => {
+                    if (rec._rawData && Array.isArray(rec._rawData)) {
+                        dataRows = dataRows.concat(rec._rawData);
+                    }
+                });
+
+                if (dataRows.length === 0) {
+                    return '请导入Excel数据';
+                }
+
+                const countifMatch = expr.match(/^COUNTIF\s*\(\s*([^,]+)\s*,\s*(.+)\s*\)$/i);
+                if (countifMatch) {
+                    const fieldName = countifMatch[1].trim();
+                    let condition = countifMatch[2].trim().replace(/^["']|["']$/g, '');
+                    const firstRow = dataRows[0];
+                    const field = Object.keys(firstRow).find(k => k.toLowerCase() === fieldName.toLowerCase());
+                    if (!field) return '字段不存在';
+
+                    const compare = parseCompareCondition(condition);
+                    if (compare) {
+                        let count = 0;
+                        dataRows.forEach(row => {
+                            const raw = row[field] !== undefined ? row[field] : '';
+                            const num = parseFloat(raw);
+                            if (isNaN(num)) return;
+                            let match = false;
+                            switch (compare.op) {
+                                case '<':
+                                    match = num < compare.val;
+                                    break;
+                                case '>':
+                                    match = num > compare.val;
+                                    break;
+                                case '<=':
+                                    match = num <= compare.val;
+                                    break;
+                                case '>=':
+                                    match = num >= compare.val;
+                                    break;
+                                default:
+                                    match = false;
+                            }
+                            if (match) count++;
+                        });
+                        return count;
+                    } else {
+                        let count = 0;
+                        dataRows.forEach(row => {
+                            const val = row[field] !== undefined ? String(row[field]).trim() : '';
+                            if (val === condition) count++;
+                        });
+                        return count;
+                    }
+                }
+
+                const countifsMatch = expr.match(/^COUNTIFS\s*\(\s*(.+)\s*\)$/i);
+                if (countifsMatch) {
+                    const params = countifsMatch[1].trim();
+                    let parts = [];
+                    let current = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < params.length; i++) {
+                        const ch = params[i];
+                        if (ch === '"') inQuotes = !inQuotes;
+                        if (ch === ',' && !inQuotes) {
+                            parts.push(current.trim());
+                            current = '';
+                        } else {
+                            current += ch;
+                        }
+                    }
+                    if (current) parts.push(current.trim());
+                    if (parts.length % 2 !== 0) return '参数必须成对（字段, 条件）';
+                    let conditions = [];
+                    for (let i = 0; i < parts.length; i += 2) {
+                        let fieldName = parts[i].trim();
+                        let condition = parts[i + 1].trim().replace(/^["']|["']$/g, '');
+                        conditions.push({ field: fieldName, value: condition });
+                    }
+                    if (conditions.length === 0) return '条件为空';
+                    let count = 0;
+                    dataRows.forEach(row => {
+                        let match = true;
+                        for (let cond of conditions) {
+                            const field = Object.keys(row).find(k => k.toLowerCase() === cond.field.toLowerCase());
+                            if (!field) { match = false; break; }
+                            const raw = row[field] !== undefined ? row[field] : '';
+                            const compare = parseCompareCondition(cond.value);
+                            if (compare) {
+                                const num = parseFloat(raw);
+                                if (isNaN(num)) { match = false; break; }
+                                let ok = false;
+                                switch (compare.op) {
+                                    case '<':
+                                        ok = num < compare.val;
+                                        break;
+                                    case '>':
+                                        ok = num > compare.val;
+                                        break;
+                                    case '<=':
+                                        ok = num <= compare.val;
+                                        break;
+                                    case '>=':
+                                        ok = num >= compare.val;
+                                        break;
+                                    default:
+                                        ok = false;
+                                }
+                                if (!ok) { match = false; break; }
+                            } else {
+                                const val = String(raw).trim();
+                                if (val !== cond.value) { match = false; break; }
+                            }
+                        }
+                        if (match) count++;
+                    });
+                    return count;
+                }
+
+                const vlookupMatch = expr.match(/^VLOOKUP\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^,]+)\s*\)$/i);
+                if (vlookupMatch) {
+                    const lookupValue = vlookupMatch[1].trim().replace(/^["']|["']$/g, '');
+                    const targetModuleName = vlookupMatch[2].trim().replace(/^["']|["']$/g, '');
+                    const returnField = vlookupMatch[3].trim().replace(/^["']|["']$/g, '');
+                    const targetMod = getAllModules().find(m => m.name === targetModuleName);
+                    if (!targetMod) return '目标模块不存在';
+                    const targetRecords = appData.records[targetMod.id] || [];
+                    let targetDataRows = [];
+                    targetRecords.forEach(rec => {
+                        if (rec._rawData && Array.isArray(rec._rawData)) {
+                            targetDataRows = targetDataRows.concat(rec._rawData);
+                        }
+                    });
+                    if (targetDataRows.length === 0) return '目标模块无数据';
+                    const keyField = Object.keys(targetDataRows[0])[0];
+                    if (!keyField) return '目标模块无字段';
+                    const retField = Object.keys(targetDataRows[0]).find(f => f.toLowerCase() === returnField
+                        .toLowerCase());
+                    if (!retField) return '返回字段不存在';
+                    const found = targetDataRows.find(row => String(row[keyField]).trim() === lookupValue);
+                    if (found) return found[retField] !== undefined ? found[retField] : '';
+                    return '未找到匹配';
+                }
+
+                const funcMatch = expr.match(/^(SUM|AVG|COUNT|MAX|MIN)\s*\(\s*(.+)\s*\)$/i);
+                if (funcMatch) {
+                    const func = funcMatch[1].toUpperCase();
+                    const fieldName = funcMatch[2].trim();
+
+                    if (func === 'COUNT') {
+                        return dataRows.length;
+                    }
+
+                    const firstRow = dataRows[0];
+                    const field = Object.keys(firstRow).find(k => k.toLowerCase() === fieldName.toLowerCase());
+                    if (!field) return '字段不存在';
+                    const values = dataRows.map(row => {
+                        const raw = row[field] !== undefined ? row[field] : '';
+                        return parseNumericValue(raw);
+                    }).filter(v => !isNaN(v));
+                    if (values.length === 0) return '无有效数据';
+                    let result;
+                    switch (func) {
+                        case 'SUM':
+                            result = values.reduce((s, v) => s + v, 0);
+                            break;
+                        case 'AVG':
+                            result = values.reduce((s, v) => s + v, 0) / values.length;
+                            break;
+                        case 'MAX':
+                            result = Math.max(...values);
+                            break;
+                        case 'MIN':
+                            result = Math.min(...values);
+                            break;
+                        default:
+                            return '不支持';
+                    }
+                    if (Number.isInteger(result)) return result;
+                    return result.toFixed(2);
+                }
+
+                return '格式错误';
+            } catch (e) {
+                return '错误';
+            }
+        }
+
+        // ---- 生成卡片HTML ----
+        function generateCardHtml(mod, isStandalone = false) {
+            const records = appData.records[mod.id] || [];
+            const fields = mod.fields || [];
+            const configMap = {};
+            dashboardConfig.modules.forEach(cfg => { configMap[cfg.id] = cfg; });
+            const cfg = configMap[mod.id] || { note: '', formulas: [] };
+            const note = cfg.note || '';
+            const formulas = cfg.formulas || [];
+
+            let formulaHtml = '';
+            if (formulas.length > 0) {
+                formulaHtml = `<div class="formula-result">`;
+                formulas.forEach((fm, idx) => {
+                    const result = calculateFormula(fm, mod.id, fields, records);
+                    const editMode = isDashboardEditMode;
+                    formulaHtml += `
+                        <div class="formula-item">
+                            <span class="fname">${escapeHtml(fm.name)}</span>
+                            <span class="fvalue">${result}</span>
+                            ${editMode ? `
+                            <div class="formula-actions">
+                                <button class="edit-fm" onclick="editSingleFormula('${mod.id}', ${idx})" title="编辑公式"><i class="fas fa-pen"></i></button>
+                                <button class="del-fm" onclick="deleteSingleFormula('${mod.id}', ${idx})" title="删除公式"><i class="fas fa-trash"></i></button>
+                            </div>` : ''}
+                        </div>
+                    `;
+                });
+                formulaHtml += `</div>`;
+            }
+
+            let latestTitle = '无';
+            let latestDate = '';
+            if (records.length > 0) {
+                const sorted = [...records].sort((a, b) => (b['日期'] || '').localeCompare(a['日期'] || ''));
+                const latest = sorted[0];
+                latestTitle = latest['标题'] || '未命名';
+                latestDate = latest['日期'] || '';
+            }
+
+            let actionsHtml = '';
+            if (isDashboardEditMode) {
+                actionsHtml = `
+                    <div class="card-actions-edit">
+                        <button onclick="moveDashboardCard('${mod.id}', -1)" title="上移"><i class="fas fa-chevron-up"></i></button>
+                        <button onclick="moveDashboardCard('${mod.id}', 1)" title="下移"><i class="fas fa-chevron-down"></i></button>
+                        <button onclick="editModuleName('${mod.id}')" title="修改名称"><i class="fas fa-pen"></i></button>
+                        <button onclick="editModuleNote('${mod.id}')" title="备注"><i class="fas fa-sticky-note"></i></button>
+                        <button onclick="toggleModuleVisibility('${mod.id}')" title="${cfg.visible === false ? '显示' : '隐藏'}"><i class="fas fa-eye${cfg.visible === false ? '-slash' : ''}"></i></button>
+                        <button onclick="deleteModule('${mod.id}')" title="删除模块" style="color:#c0392b;"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-flag" style="color:var(--gold);margin-right:6px;"></i>${escapeHtml(mod.name)}</h3>
+                        ${actionsHtml}
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item"><strong>${records.length}</strong> 条记录</div>
+                        <div class="stat-item"><strong>${fields.length}</strong> 个字段</div>
+                        ${latestDate ? `<div class="stat-item">📅 ${escapeHtml(latestDate)}</div>` : ''}
+                    </div>
+                    ${note ? `<div class="card-note"><i class="fas fa-pencil-alt" style="margin-right:6px;color:var(--gold);"></i>${escapeHtml(note)}</div>` : ''}
+                    ${formulaHtml}
+                    <div class="latest-doc">📄 最近：${escapeHtml(latestTitle)}</div>
+                    ${isDashboardEditMode ? `<button class="add-stat-btn" onclick="showAddStatModal('${mod.id}')"><i class="fas fa-plus"></i> 添加统计</button>` : ''}
+                </div>
+            `;
+        }
+
+        // ---- 看板渲染 ----
+        function renderDashboard() {
+            currentModuleTitle.textContent = '📊 数据看板';
+            const allModules = getAllModules();
+            const totalRecords = allModules.reduce((sum, m) => sum + (appData.records[m.id] || []).length, 0);
+            const today = new Date().toISOString().slice(0, 10);
+            let todayNew = 0;
+            allModules.forEach(m => {
+                const recs = appData.records[m.id] || [];
+                recs.forEach(r => {
+                    if (r['日期'] === today) todayNew++;
+                });
+            });
+
+            searchBar.style.display = 'none';
+            if (searchInfo) searchInfo.textContent = '';
+
+            let searchHtml = `
+                <div class="dashboard-search-bar">
+                    <i class="fas fa-search" style="color:var(--gold);font-size:16px;"></i>
+                    <input type="text" id="globalSearchInput" placeholder="🔍 搜索全部模块（标题/内容）..." value="${escapeHtml(globalSearchKeyword)}" onkeydown="if(event.key==='Enter') searchAllModules();" />
+                    <button onclick="searchAllModules()"><i class="fas fa-search"></i> 搜索</button>
+                    <button class="clear-btn" onclick="clearGlobalSearch()"><i class="fas fa-times"></i> 清除</button>
+                    <span class="info" id="globalSearchInfo"></span>
+                </div>
+            `;
+
+            let searchResultsHtml = '';
+            let searchResults = [];
+            if (globalSearchKeyword.trim() !== '') {
+                const kw = globalSearchKeyword.trim().toLowerCase();
+                allModules.forEach(mod => {
+                    const recs = appData.records[mod.id] || [];
+                    recs.forEach(rec => {
+                        const searchText = getDocumentSearchText(rec).toLowerCase();
+                        if (searchText.includes(kw)) {
+                            searchResults.push({ mod, rec });
+                        }
+                    });
+                });
+                searchResults.sort((a, b) => {
+                    const aTitle = (a.rec['标题'] || '').toLowerCase().includes(kw);
+                    const bTitle = (b.rec['标题'] || '').toLowerCase().includes(kw);
+                    if (aTitle && !bTitle) return -1;
+                    if (!aTitle && bTitle) return 1;
+                    return 0;
+                });
+                const infoEl = document.getElementById('globalSearchInfo');
+                if (infoEl) {
+                    infoEl.textContent = `找到 ${searchResults.length} 篇文档`;
+                }
+                if (searchResults.length > 0) {
+                    searchResultsHtml = `
+                        <div class="search-results-list">
+                            ${searchResults.map(({mod, rec}) => {
+                                const title = rec['标题'] || '无标题';
+                                const content = rec['内容'] || '';
+                                let snippet = content.replace(/<[^>]+>/g, ' ').substring(0, 150) + (content.length > 150 ? '...' : '');
+                                if (globalSearchKeyword.trim() !== '') {
+                                    const kw = globalSearchKeyword.trim();
+                                    const highlightedTitle = highlightKeyword(title, kw);
+                                    const highlightedSnippet = highlightKeyword(snippet, kw);
+                                    return `
+                                        <div class="search-result-item" onclick="showDocPreview('${mod.id}','${rec.id}')">
+                                            <div class="result-mod"><i class="fas fa-folder"></i> ${escapeHtml(mod.name)}</div>
+                                            <div class="result-title">${highlightedTitle}</div>
+                                            <div class="result-snippet">${highlightedSnippet}</div>
+                                            <div class="result-meta">📅 ${escapeHtml(rec['日期'] || '')}</div>
+                                        </div>
+                                    `;
+                                }
+                                return `
+                                    <div class="search-result-item" onclick="showDocPreview('${mod.id}','${rec.id}')">
+                                        <div class="result-mod"><i class="fas fa-folder"></i> ${escapeHtml(mod.name)}</div>
+                                        <div class="result-title">${escapeHtml(title)}</div>
+                                        <div class="result-snippet">${escapeHtml(snippet)}</div>
+                                        <div class="result-meta">📅 ${escapeHtml(rec['日期'] || '')}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                } else {
+                    searchResultsHtml = `<div class="no-search-result"><i class="fas fa-search"></i> 未找到包含 “${escapeHtml(globalSearchKeyword)}” 的文档</div>`;
+                }
+            }
+
+            let statsHtml = `
+                <div class="dashboard-stats">
+                    <div class="stat-box"><div class="number">${allModules.length}</div><div class="label">📁 总模块</div></div>
+                    <div class="stat-box"><div class="number">${totalRecords}</div><div class="label">📄 总文档</div></div>
+                    <div class="stat-box"><div class="number">${todayNew}</div><div class="label">📅 今日新增</div></div>
+                </div>
+            `;
+
+            let mainHtml = '';
+            if (globalSearchKeyword.trim() === '') {
+                const configMap = {};
+                dashboardConfig.modules.forEach(cfg => {
+                    configMap[cfg.id] = cfg;
+                });
+
+                const roots = getRootModules();
+                roots.sort((a, b) => {
+                    const idxA = dashboardConfig.modules.findIndex(c => c.id === a.id);
+                    const idxB = dashboardConfig.modules.findIndex(c => c.id === b.id);
+                    if (idxA === -1 && idxB === -1) return 0;
+                    if (idxA === -1) return 1;
+                    if (idxB === -1) return -1;
+                    return idxA - idxB;
+                });
+
+                const groupRoots = roots.filter(r => getChildModules(r.id).length > 0);
+                const standaloneRoots = roots.filter(r => getChildModules(r.id).length === 0);
+
+                if (standaloneRoots.length > 0) {
+                    mainHtml += `<div class="dashboard-group"><div class="group-header"><span>📌 基础信息</span></div><div class="dashboard-grid">`;
+                    standaloneRoots.forEach(mod => {
+                        const cfg = configMap[mod.id] || { visible: true };
+                        if (cfg.visible === false) return;
+                        mainHtml += generateCardHtml(mod, true);
+                    });
+                    mainHtml += `</div></div>`;
+                }
+
+                groupRoots.forEach(root => {
+                    const rootCfg = configMap[root.id] || { visible: true };
+                    if (rootCfg.visible === false) return;
+
+                    const children = getChildModules(root.id).filter(child => {
+                        const cfg = configMap[child.id] || { visible: true };
+                        return cfg.visible !== false;
+                    });
+                    if (children.length === 0) return;
+
+                    mainHtml += `<div class="dashboard-group">`;
+                    mainHtml += `<div class="group-header">
+                        <span>${escapeHtml(root.name)}</span>
+                        ${isDashboardEditMode ? `
+                        <div class="group-actions">
+                            <button onclick="moveDashboardCard('${root.id}', -1)" title="上移分组"><i class="fas fa-chevron-up"></i></button>
+                            <button onclick="moveDashboardCard('${root.id}', 1)" title="下移分组"><i class="fas fa-chevron-down"></i></button>
+                            <button onclick="editModuleName('${root.id}')" title="修改名称"><i class="fas fa-pen"></i></button>
+                            <button onclick="editModuleNote('${root.id}')" title="备注"><i class="fas fa-sticky-note"></i></button>
+                            <button onclick="toggleModuleVisibility('${root.id}')" title="${rootCfg.visible === false ? '显示' : '隐藏'}"><i class="fas fa-eye${rootCfg.visible === false ? '-slash' : ''}"></i></button>
+                            <button onclick="deleteModule('${root.id}')" title="删除分组（含子模块）" style="color:#c0392b;"><i class="fas fa-trash"></i></button>
+                        </div>
+                        ` : ''}
+                    </div>`;
+
+                    const rootRecords = appData.records[root.id] || [];
+                    mainHtml += `<div class="dashboard-list">`;
+                    if (rootRecords.length > 0) {
+                        mainHtml += generateCardHtml(root, false);
+                    }
+                    children.forEach(child => {
+                        mainHtml += generateCardHtml(child, false);
+                    });
+                    mainHtml += `</div></div>`;
+                });
+
+                if (mainHtml === '') {
+                    mainHtml = `<div class="empty-tip"><i class="fas fa-inbox"></i> 暂无模块数据</div>`;
+                }
+            }
+
+            // ★ 保留看板中的"统计示例"按钮
+            const editBtnHtml = `
+                <div style="margin-bottom:16px;display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;">
+                    <button class="primary" onclick="toggleDashboardEdit()" style="padding:6px 20px;border-radius:30px;border:none;background:var(--gold);color:var(--dark-red);cursor:pointer;font-weight:600;">
+                        <i class="fas fa-${isDashboardEditMode ? 'save' : 'edit'}"></i> ${isDashboardEditMode ? '保存看板' : '编辑看板'}
+                    </button>
+                    <button onclick="showTemplateHelp()" style="padding:6px 20px;border-radius:30px;border:1px solid var(--gold);background:#fff;color:var(--dark-red);cursor:pointer;font-weight:500;">
+                        <i class="fas fa-lightbulb"></i> 统计示例
+                    </button>
+                </div>
+            `;
+
+            let finalHtml = searchHtml + statsHtml + editBtnHtml;
+            if (globalSearchKeyword.trim() !== '') {
+                finalHtml += searchResultsHtml;
+            } else {
+                finalHtml += mainHtml;
+            }
+
+            tableWrap.innerHTML = finalHtml;
+            renderToolbar();
+        }
+
+        // ---- 全局搜索 ----
+        function searchAllModules() {
+            const keyword = document.getElementById('globalSearchInput')?.value?.trim() || '';
+            globalSearchKeyword = keyword;
+            renderDashboard();
+        }
+
+        function clearGlobalSearch() {
+            const input = document.getElementById('globalSearchInput');
+            if (input) input.value = '';
+            globalSearchKeyword = '';
+            renderDashboard();
+        }
+
+        // ---- 看板编辑功能 ----
+        function toggleDashboardEdit() {
+            if (isDashboardEditMode) {
+                saveDashboardConfig(dashboardConfig);
+                showToast('看板配置已保存', 'success');
+            }
+            isDashboardEditMode = !isDashboardEditMode;
+            renderDashboard();
+        }
+
+        function editModuleName(modId) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) return;
+            const newName = prompt('请输入新的模块名称：', mod.name);
+            if (newName !== null && newName.trim() !== '') {
+                mod.name = newName.trim();
+                saveData(appData);
+                renderDashboard();
+                renderModuleList();
+                showToast('模块名称已更新', 'success');
+            }
+        }
+
+        function editModuleNote(modId) {
+            const cfg = dashboardConfig.modules.find(c => c.id === modId);
+            const currentNote = cfg ? cfg.note || '' : '';
+            const newNote = prompt('请输入该模块的备注信息：', currentNote);
+            if (newNote === null) return;
+            let configItem = dashboardConfig.modules.find(c => c.id === modId);
+            if (!configItem) {
+                configItem = { id: modId, visible: true, note: '', formulas: [] };
+                dashboardConfig.modules.push(configItem);
+            }
+            configItem.note = newNote.trim();
+            renderDashboard();
+            showToast('备注已更新', 'success');
+        }
+
+        function toggleModuleVisibility(modId) {
+            let cfg = dashboardConfig.modules.find(c => c.id === modId);
+            if (!cfg) {
+                cfg = { id: modId, visible: true, note: '', formulas: [] };
+                dashboardConfig.modules.push(cfg);
+            }
+            cfg.visible = (cfg.visible === undefined) ? false : !cfg.visible;
+            renderDashboard();
+            showToast(cfg.visible ? '模块已显示' : '模块已隐藏', 'info');
+        }
+
+        function moveDashboardCard(modId, direction) {
+            const idx = dashboardConfig.modules.findIndex(c => c.id === modId);
+            if (idx === -1) {
+                dashboardConfig.modules.push({ id: modId, visible: true, note: '', formulas: [] });
+                const newIdx = dashboardConfig.modules.findIndex(c => c.id === modId);
+                if (newIdx === -1) return;
+                const targetIdx = newIdx + direction;
+                if (targetIdx < 0 || targetIdx >= dashboardConfig.modules.length) return;
+                [dashboardConfig.modules[newIdx], dashboardConfig.modules[targetIdx]] = [dashboardConfig.modules[
+                    targetIdx], dashboardConfig.modules[newIdx]];
+                renderDashboard();
+                return;
+            }
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= dashboardConfig.modules.length) return;
+            [dashboardConfig.modules[idx], dashboardConfig.modules[targetIdx]] = [dashboardConfig.modules[targetIdx],
+                dashboardConfig.modules[idx]
+            ];
+            saveDashboardConfig(dashboardConfig);
+            renderDashboard();
+        }
+
+        // ---- 文档预览 ----
+        function showDocPreview(modId, recId) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) { showToast('模块不存在', 'error'); return; }
+            const records = appData.records[modId] || [];
+            const rec = records.find(r => r.id === recId);
+            if (!rec) { showToast('文档不存在', 'error'); return; }
+
+            const title = rec['标题'] || '无标题';
+            const content = rec['内容'] || '';
+            const date = rec['日期'] || '';
+
+            modalTitle.innerHTML = `<i class="fas fa-file-alt"></i> ${escapeHtml(title)}`;
+            modalBody.innerHTML = `
+                <div style="margin-bottom:6px;font-size:12px;color:#6a5a4a;">
+                    <span style="background:#f5ede4;padding:1px 10px;border-radius:12px;"><i class="fas fa-folder"></i> ${escapeHtml(mod.name)}</span>
+                    ${date ? `<span style="margin-left:8px;">📅 ${escapeHtml(date)}</span>` : ''}
+                    <button onclick="jumpToModule('${modId}')" style="margin-left:8px;padding:1px 12px;border:none;border-radius:16px;background:var(--gold);color:var(--dark-red);cursor:pointer;font-size:11px;font-weight:600;">跳转到模块</button>
+                </div>
+                <div style="border-top:1px solid #f0e8e0;padding-top:8px;max-height:55vh;overflow-y:auto;">${content || '<div style="color:#999;text-align:center;padding:16px 0;">（文档内容为空）</div>'}</div>
+                <div class="form-actions"><button class="btn-cancel" onclick="closeModal()">关闭</button></div>
+            `;
+            modalOverlay.classList.add('show');
+        }
+
+        function jumpToModule(modId) { closeModal();
+            selectModule(modId); }
+
+        // ---- 添加统计 ----
+        function showAddStatModal(modId) {
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) return;
+            const fields = mod.fields || [];
+            if (fields.length === 0) {
+                showToast('该模块没有字段，无法添加统计', 'error');
+                return;
+            }
+            modalTitle.innerHTML = `<i class="fas fa-chart-line"></i> 添加统计指标 - ${mod.name}`;
+            let html = `
+                <div class="form-group">
+                    <label>指标名称（显示名称）</label>
+                    <input type="text" id="statName" placeholder="例如：18-45岁人数" />
+                </div>
+                <div class="form-group">
+                    <label>统计字段</label>
+                    <select id="statField">
+                        ${fields.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>统计类型</label>
+                    <select id="statType">
+                        <option value="COUNT">计数 (COUNT)</option>
+                        <option value="SUM">求和 (SUM)</option>
+                        <option value="AVG">平均值 (AVG)</option>
+                        <option value="MAX">最大值 (MAX)</option>
+                        <option value="MIN">最小值 (MIN)</option>
+                        <option value="COUNTIF">条件计数 (COUNTIF)</option>
+                        <option value="COUNTIFS" selected>多条件计数 (COUNTIFS)</option>
+                        <option value="VLOOKUP">查找引用 (VLOOKUP)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="conditionGroup">
+                    <label>条件（COUNTIF/COUNTIFS 使用，多个条件用逗号分隔，字段和条件成对，条件用双引号）</label>
+                    <input type="text" id="statCondition" placeholder='例如：年龄, ">=18", 年龄, "<=45"' />
+                    <div style="font-size:12px;color:#999;margin-top:4px;">
+                        💡 支持比较运算符：<code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code>
+                    </div>
+                </div>
+                <div class="form-group" id="vlookupGroup" style="display:none;">
+                    <label>目标模块名（仅VLOOKUP需要）</label>
+                    <input type="text" id="vlookupModule" placeholder="例如：党员信息" />
+                    <label style="margin-top:6px;">返回字段</label>
+                    <input type="text" id="vlookupReturn" placeholder="例如：联系电话" />
+                </div>
+                <div class="help-tip">
+                    <strong>📌 示例：统计 18~45 岁人数</strong><br>
+                    字段选 <code>年龄</code>，类型选 <code>COUNTIFS</code>，条件填 <code>年龄, ">=18", 年龄, "<=45"</code>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn-submit" onclick="confirmAddStat('${modId}')">添加</button>
+                </div>
+            `;
+            modalBody.innerHTML = html;
+            modalOverlay.classList.add('show');
+
+            const statType = document.getElementById('statType');
+            const conditionGroup = document.getElementById('conditionGroup');
+            const vlookupGroup = document.getElementById('vlookupGroup');
+            statType.addEventListener('change', function() {
+                conditionGroup.style.display = (this.value === 'COUNTIF' || this.value === 'COUNTIFS') ? 'block' :
+                    'none';
+                vlookupGroup.style.display = this.value === 'VLOOKUP' ? 'block' : 'none';
+            });
+
+            conditionGroup.style.display = 'block';
+            vlookupGroup.style.display = 'none';
+        }
+
+        function confirmAddStat(modId) {
+            const name = document.getElementById('statName').value.trim();
+            const field = document.getElementById('statField').value;
+            const type = document.getElementById('statType').value;
+            if (!name) {
+                showToast('请输入指标名称', 'error');
+                return;
+            }
+            let expression = '';
+            if (type === 'COUNTIF') {
+                const condition = document.getElementById('statCondition').value.trim();
+                if (!condition) {
+                    showToast('请输入条件', 'error');
+                    return;
+                }
+                expression = `COUNTIF(${field}, ${condition})`;
+            } else if (type === 'COUNTIFS') {
+                const condStr = document.getElementById('statCondition').value.trim();
+                if (!condStr) {
+                    showToast('请输入条件对', 'error');
+                    return;
+                }
+                expression = `COUNTIFS(${condStr})`;
+            } else if (type === 'VLOOKUP') {
+                const targetModule = document.getElementById('vlookupModule').value.trim();
+                const returnField = document.getElementById('vlookupReturn').value.trim();
+                if (!targetModule || !returnField) {
+                    showToast('请输入目标模块名和返回字段', 'error');
+                    return;
+                }
+                const mod = getAllModules().find(m => m.id === modId);
+                const firstField = mod && mod.fields && mod.fields.length > 0 ? mod.fields[0] : '姓名';
+                expression = `VLOOKUP(${firstField}, "${targetModule}", "${returnField}")`;
+            } else {
+                expression = `${type}(${field})`;
+            }
+
+            let cfg = dashboardConfig.modules.find(c => c.id === modId);
+            if (!cfg) {
+                cfg = { id: modId, visible: true, note: '', formulas: [] };
+                dashboardConfig.modules.push(cfg);
+            }
+            if (!cfg.formulas) cfg.formulas = [];
+            cfg.formulas.push({ name: name, expression: expression });
+            saveDashboardConfig(dashboardConfig);
+            closeModal();
+            renderDashboard();
+            showToast(`统计指标 "${name}" 已添加`, 'success');
+        }
+
+        function deleteSingleFormula(modId, idx) {
+            let cfg = dashboardConfig.modules.find(c => c.id === modId);
+            if (!cfg || !cfg.formulas || cfg.formulas.length <= idx) return;
+            const formulaName = cfg.formulas[idx].name;
+            if (!confirm(`确定要删除公式 "${formulaName}" 吗？`)) return;
+            cfg.formulas.splice(idx, 1);
+            saveDashboardConfig(dashboardConfig);
+            renderDashboard();
+            showToast(`公式 "${formulaName}" 已删除`, 'success');
+        }
+
+        // ---- 编辑公式 ----
+        window.insertFormulaField = function(field) {
+            const input = document.getElementById('editFormulaExpr');
+            if (!input) return;
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            const before = text.substring(0, start);
+            const after = text.substring(end);
+            input.value = before + field + after;
+            const newCursor = start + field.length;
+            input.selectionStart = newCursor;
+            input.selectionEnd = newCursor;
+            input.focus();
+        };
+        window.insertFormulaText = function(text) {
+            const input = document.getElementById('editFormulaExpr');
+            if (!input) return;
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const textVal = input.value;
+            const before = textVal.substring(0, start);
+            const after = textVal.substring(end);
+            input.value = before + text + after;
+            const newCursor = start + text.length;
+            input.selectionStart = newCursor;
+            input.selectionEnd = newCursor;
+            input.focus();
+        };
+        window.previewFormula = function(modId, idx) {
+            const exprInput = document.getElementById('editFormulaExpr');
+            if (!exprInput) return;
+            const expr = exprInput.value.trim();
+            if (!expr) {
+                document.getElementById('formulaPreviewResult').textContent = '⚠️ 请输入表达式';
+                return;
+            }
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) {
+                document.getElementById('formulaPreviewResult').textContent = '❌ 模块不存在';
+                return;
+            }
+            const records = appData.records[modId] || [];
+            const fields = mod.fields || [];
+            const tempFormula = { name: '预览', expression: expr };
+            const result = calculateFormula(tempFormula, modId, fields, records);
+            const previewEl = document.getElementById('formulaPreviewResult');
+            if (typeof result === 'number' || typeof result === 'string') {
+                previewEl.innerHTML = `✅ 计算结果：<strong>${result}</strong>`;
+            } else {
+                previewEl.innerHTML = `❌ 计算错误：${result}`;
+            }
+        };
+
+        function editSingleFormula(modId, idx) {
+            let cfg = dashboardConfig.modules.find(c => c.id === modId);
+            if (!cfg || !cfg.formulas || cfg.formulas.length <= idx) return;
+            const fm = cfg.formulas[idx];
+            const mod = getAllModules().find(m => m.id === modId);
+            if (!mod) return;
+            const fields = mod.fields || [];
+
+            let fieldBtns = fields.map(f =>
+                `<button type="button" onclick="window.insertFormulaField('${escapeHtml(f)}')" style="margin:2px;padding:2px 8px;border:1px solid #d0c0b0;border-radius:4px;background:#f5ede4;cursor:pointer;font-size:12px;">${escapeHtml(f)}</button>`
+            ).join('');
+
+            let funcBtns = ['SUM', 'AVG', 'COUNT', 'MAX', 'MIN', 'COUNTIF', 'COUNTIFS', 'VLOOKUP'].map(f =>
+                `<button type="button" onclick="window.insertFormulaText('${f}(')" style="margin:2px;padding:2px 8px;border:1px solid #d0c0b0;border-radius:4px;background:#f5ede4;cursor:pointer;font-size:12px;">${f}</button>`
+            ).join('');
+
+            modalTitle.innerHTML = `<i class="fas fa-calculator"></i> 编辑公式 - ${mod.name}`;
+            modalBody.innerHTML = `
+                <div style="background:#fcf8f2;border-left:4px solid var(--gold);padding:8px 12px;margin-bottom:12px;font-size:13px;color:#4a3a2a;">
+                    <strong><i class="fas fa-info-circle" style="color:var(--gold);"></i> 支持函数</strong><br>
+                    <code>SUM(字段)</code> 求和 &nbsp; <code>AVG(字段)</code> 平均 &nbsp; <code>COUNT(字段)</code> 计数 &nbsp; 
+                    <code>MAX(字段)</code> 最大 &nbsp; <code>MIN(字段)</code> 最小 &nbsp; 
+                    <code>COUNTIF(字段, "条件")</code> 单条件计数（支持 <, >, <=, >=）&nbsp; 
+                    <code>COUNTIFS(字段1, "条件1", 字段2, "条件2", ...)</code> 多条件计数（支持比较运算符）&nbsp; 
+                    <code>VLOOKUP(查找值, "目标模块名", "返回字段")</code> 跨模块查找
+                    <br><span style="font-size:12px;color:#999;">💡 字段名区分大小写，字符串条件请用双引号包围</span>
+                </div>
+
+                <div style="margin-bottom:8px;">
+                    <span style="font-weight:600;">字段：</span> ${fieldBtns}
+                </div>
+                <div style="margin-bottom:12px;">
+                    <span style="font-weight:600;">函数：</span> ${funcBtns}
+                    <span style="font-size:12px;color:#999;margin-left:8px;">点击后插入到光标位置</span>
+                </div>
+
+                <div class="form-group">
+                    <label>指标名称</label>
+                    <input type="text" id="editFormulaName" value="${escapeHtml(fm.name)}" />
+                </div>
+                <div class="form-group">
+                    <label>表达式</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" id="editFormulaExpr" value="${escapeHtml(fm.expression)}" style="flex:1;" />
+                        <button type="button" onclick="window.previewFormula('${modId}', ${idx})" style="padding:6px 16px;background:var(--gold);color:var(--dark-red);border:none;border-radius:30px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                            <i class="fas fa-eye"></i> 预览结果
+                        </button>
+                    </div>
+                    <div id="formulaPreviewResult" style="margin-top:6px;font-size:14px;color:var(--dark-red);font-weight:500;min-height:20px;"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="closeModal()">取消</button>
+                    <button class="btn-submit" onclick="saveSingleFormula('${modId}', ${idx})">保存</button>
+                </div>
+            `;
+            modalOverlay.classList.add('show');
+        }
+
+        function saveSingleFormula(modId, idx) {
+            const name = document.getElementById('editFormulaName').value.trim();
+            const expr = document.getElementById('editFormulaExpr').value.trim();
+            if (!name || !expr) {
+                showToast('名称和表达式不能为空', 'error');
+                return;
+            }
+            let cfg = dashboardConfig.modules.find(c => c.id === modId);
+            if (!cfg) {
+                cfg = { id: modId, visible: true, note: '', formulas: [] };
+                dashboardConfig.modules.push(cfg);
+            }
+            if (!cfg.formulas) cfg.formulas = [];
+            if (idx >= cfg.formulas.length) {
+                showToast('公式索引错误', 'error');
+                return;
+            }
+            cfg.formulas[idx] = { name, expression: expr };
+            saveDashboardConfig(dashboardConfig);
+            closeModal();
+            renderDashboard();
+            showToast('公式已更新', 'success');
+        }
+
+        // ---- 统计示例（仅在看板中保留） ----
+        function showTemplateHelp() {
+            modalTitle.innerHTML = `<i class="fas fa-lightbulb"></i> 村务统计示例（年龄段统计）`;
+            modalBody.innerHTML = `
+                <div class="help-tip">
+                    <strong>📌 如何统计年龄段人数（如 18~45 岁）</strong>
+                </div>
+                <div style="font-size:14px;color:#4a3a2a;line-height:1.8;">
+                    <p>1️⃣ 先导入包含 <strong>年龄</strong> 字段的 Excel 数据（如村民信息表）。</p>
+                    <p>2️⃣ 进入 <strong>数据看板</strong>，在对应模块卡片中点击 <strong>“添加统计”</strong>。</p>
+                    <p>3️⃣ 填写指标名称（如 <code>18-45岁人数</code>），统计类型选 <strong>COUNTIFS</strong>。</p>
+                    <p>4️⃣ 在条件框中输入：</p>
+                    <div style="background:#f5ede4;padding:10px 14px;border-radius:6px;margin:6px 0;font-family:monospace;font-size:14px;">
+                        年龄, ">=18", 年龄, "<=45"
+                    </div>
+                    <p>5️⃣ 点击保存，看板即可显示 <strong>18~45 岁</strong> 年龄段的人数。</p>
+                    <hr style="border:0;border-top:1px solid #f0e8e0;margin:12px 0;" />
+                    <p><strong>📊 更多统计公式示例：</strong></p>
+                    <ul style="padding-left:20px;">
+                        <li><code>COUNTIF(年龄, ">60")</code> — 统计大于60岁的人数</li>
+                        <li><code>COUNTIF(政治面貌, "党员")</code> — 统计党员人数</li>
+                        <li><code>SUM(收入)</code> — 求和</li>
+                        <li><code>AVG(年龄)</code> — 平均年龄</li>
+                        <li><code>VLOOKUP(姓名, "村民信息", "联系电话")</code> — 跨模块查找</li>
+                    </ul>
+                    <p style="margin-top:10px;color:#999;font-size:12px;">💡 字段名需与 Excel 列名完全一致（区分大小写）</p>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="closeModal()">关闭</button>
+                </div>
+            `;
+            modalOverlay.classList.add('show');
+        }
+
+        // ---- 工具栏渲染（已移除模块内的“统计示例”按钮） ----
+        function renderToolbar() {
+            const isDashboard = currentModuleId === DASHBOARD_ID;
+            const mod = isDashboard ? null : getAllModules().find(m => m.id === currentModuleId);
+            let btns = '';
+
+            btns += `<button onclick="refreshCurrentView()"><i class="fas fa-sync-alt"></i> 刷新</button>`;
+
+            if (!isDashboard && mod) {
+                btns += `<button class="add-btn" onclick="showNewDocumentModal('${mod.id}')"><i class="fas fa-plus"></i> 新建文档</button>`;
+                btns +=
+                    `<button class="upload-img" onclick="uploadImageForModule('${mod.id}')"><i class="fas fa-image"></i> 上传图片</button>`;
+                btns +=
+                    `<button class="template" onclick="document.getElementById('importWordFile').click()" style="background:#17a2b8;border-color:#17a2b8;color:#fff;"><i class="fas fa-file-word"></i> 导入Word</button>`;
+                btns += `<input type="file" id="importWordFile" class="hidden-input" accept=".docx" onchange="importWord(event)" />`;
+                btns +=
+                    `<button class="excel" onclick="document.getElementById('importExcelFile').click()"><i class="fas fa-file-import"></i> 导入Excel</button>`;
+                btns += `<input type="file" id="importExcelFile" class="hidden-input" accept=".xlsx,.xls" onchange="importExcel(event)" />`;
+                btns += `<button onclick="printModule()"><i class="fas fa-print"></i> 打印</button>`;
+                // ★ 已移除“统计示例”按钮
+            }
+
+            toolbarContainer.innerHTML = btns;
+        }
+
+        // ---- 打印当前模块 ----
+        function printModule() {
+            if (currentModuleId === DASHBOARD_ID) {
+                showToast('请先选择一个模块', 'error');
+                return;
+            }
+            const mod = getAllModules().find(m => m.id === currentModuleId);
+            if (!mod) {
+                showToast('模块不存在', 'error');
+                return;
+            }
+            window.print();
+        }
+
+        // ---- 导出/导入JSON ----
+        function exportAllData() {
+            const data = {
+                modules: appData.modules,
+                records: appData.records,
+                dashboardConfig: dashboardConfig,
+                platformTitle: loadPlatformTitle(),
+                platformIcon: loadPlatformIcon(),
+                platformIconType: loadPlatformIconType(),
+                platformIconData: loadPlatformIconData(),
+                exportedAt: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `村务平台数据_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('数据导出成功', 'success');
+        }
+
+        function importAllData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!imported.modules || !imported.records) {
+                        showToast('数据格式无效', 'error');
+                        return;
+                    }
+                    if (!confirm('导入将覆盖当前所有数据（不含用户账户），确定继续吗？')) return;
+                    appData.modules = imported.modules;
+                    appData.records = imported.records;
+                    if (imported.dashboardConfig) dashboardConfig = imported.dashboardConfig;
+                    if (imported.platformTitle) savePlatformTitle(imported.platformTitle);
+                    if (imported.platformIcon) savePlatformIcon(imported.platformIcon);
+                    if (imported.platformIconType) savePlatformIconType(imported.platformIconType);
+                    if (imported.platformIconData) savePlatformIconData(imported.platformIconData);
+                    saveData(appData);
+                    saveDashboardConfig(dashboardConfig);
+                    renderPlatformIcon();
+                    document.getElementById('platformTitleDisplay').textContent = loadPlatformTitle();
+                    currentModuleId = DASHBOARD_ID;
+                    renderModuleList();
+                    renderDashboard();
+                    showToast('数据导入成功！', 'success');
+                } catch (err) {
+                    showToast('导入失败：' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ---- 刷新 ----
+        function refreshCurrentView() {
+            if (currentModuleId === DASHBOARD_ID) {
+                renderDashboard();
+            } else if (currentModuleId) {
+                renderRecords(currentModuleId);
+            } else if (getAllModules().length > 0) {
+                selectModule(getAllModules()[0].id);
+            } else {
+                renderEmpty();
+            }
+            showToast('已刷新', 'info', 1000);
+        }
+
+        // ---- 模态框 ----
+        function closeModal() {
+            modalOverlay.classList.remove('show');
+        }
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // ---- 初始化 ----
+        function initPlatform() {
+            if (!appData.modules || appData.modules.length === 0) {
+                appData.modules = [];
+                appData.records = {};
+                dashboardConfig.modules = [];
+                saveData(appData);
+                saveDashboardConfig(dashboardConfig);
+            }
+
+            expandedNodes = new Set();
+            appData.modules.forEach(m => {
+                if (getChildModules(m.id).length > 0) {
+                    expandedNodes.add(m.id);
+                }
+            });
+
+            currentModuleId = DASHBOARD_ID;
+            renderModuleList();
+            renderDashboard();
+        }
+
+        // ---- 启动 ----
+        (function checkSession() {
+            const session = getSession();
+            if (session) {
+                showMainApp();
+            } else {
+                document.getElementById('loginOverlay').classList.remove('hidden');
+            }
+        })();
+
+        console.log('✅ 平台已加载，表格列宽可手动拖拽调整，内容自动换行。模块内“统计示例”已移除。');
+    </script>
+</body>
+</html>
